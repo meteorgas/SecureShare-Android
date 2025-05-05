@@ -1,4 +1,5 @@
-package com.mazeppa.filebeam
+package com.mazeppa.filebeam.utils
+
 import android.Manifest
 import android.content.Intent
 import android.os.Build
