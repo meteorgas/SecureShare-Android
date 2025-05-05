@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">FileBeam</string>
+    <string name="text_start">Start</string>
+    <string name="text_request_permissions">Request Permissions</string>
+</resources>
