@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="40dp"
-        android:backgroundTint="@color/colorBlue600"
+        android:backgroundTint="@color/colorPrimary"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="@string/text_request_permissions"
@@ -39,7 +39,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="20dp"
-        android:backgroundTint="@color/colorBlue600"
+        android:backgroundTint="@color/colorPrimary"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="@string/text_choose_file"
@@ -51,7 +51,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="20dp"
-        android:backgroundTint="@color/colorBlue600"
+        android:backgroundTint="@color/colorPrimary"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:text="@string/text_send_file"
@@ -63,7 +63,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="20dp"
-        android:backgroundTint="@color/colorBlue600"
+        android:backgroundTint="@color/colorPrimary"
         android:insetTop="0dp"
         android:insetBottom="0dp"
         android:hint="@string/text_ip_address"
@@ -78,6 +78,6 @@
         android:layout_marginTop="20dp"
         android:max="100"
         android:progress="20"
-        android:progressTint="@color/colorBlue600" />
+        android:progressTint="@color/colorPrimary" />
 
 </LinearLayout>

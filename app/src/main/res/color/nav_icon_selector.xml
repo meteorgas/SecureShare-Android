@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:color="#1976D2" android:state_checked="true" />   <!-- Blue 700 -->
+    <item android:color="#9E9E9E" android:state_checked="false" />  <!-- Grey 500 -->
+</selector>
