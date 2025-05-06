@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="primaryBlueColor" format="color" />
+    <attr name="primaryVioletColor" format="color" />
+    <attr name="errorBorderColor" format="color" />
+    <attr name="errorInsideColor" format="color" />
+    <attr name="primaryButtonColorFirst" format="color" />
+    <attr name="primaryButtonColorSecond" format="color" />
+    <attr name="primaryButtonColorPressedFirst" format="color" />
+    <attr name="primaryButtonColorPressedSecond" format="color" />
+    <attr name="screenBackgroundColor" format="color" />
+    <attr name="primaryTextColor" format="color" />
+    <attr name="primaryTextColorReverse" format="color" />
+    <attr name="secondaryTextColor" format="color" />
+    <attr name="disabledTextColor" format="color" />
+    <attr name="animatedBorderMiddleFirstColor" format="color" />
+    <attr name="animatedBorderMiddleSecondColor" format="color" />
+    <attr name="progressBarBackground" format="color" />
+    <attr name="bottomSheetHandlerColor" format="color" />
+    <attr name="disabledContinueButtonFirstColor" format="color" />
+    <attr name="disabledContinueButtonSecondColor" format="color" />
+    <attr name="primaryErrorColor" format="color" />
+    <attr name="actionButtonBackgroundColor" format="color" />
+    <attr name="considerLaterIconColor" format="color" />
+    <attr name="primaryGrayColor" format="color" />
+    <attr name="loginButtonBackgroundColor" format="color" />
+    <attr name="colorScreenBackgroundColorAndNeutral800" format="color" />
+    <attr name="colorTransparentAndBlack" format="color" />
+    <attr name="backgroundAuthentication" format="reference" />
+    <attr name="backgroundForceUpdate" format="reference" />
+    <attr name="colorFloatingBottomSheetBackground" format="color" />
+
+    <attr name="colorNeutral1AndNeutral999" format="color" />
+    <attr name="colorNeutral1AndNeutral900" format="color" />
+    <attr name="colorNeutral1AndNeutral850" format="color" />
+    <attr name="colorNeutral1AndNeutral700" format="color" />
+    <attr name="colorNeutral1AndNeutral600" format="color" />
+    <attr name="colorNeutral1AndNeutral500" format="color" />
+    <attr name="colorNeutral50And800" format="color" />
+    <attr name="colorNeutral100And800" format="color" />
+    <attr name="colorNeutral100AndNeutral800" format="color" />
+    <attr name="colorNeutral200And700" format="color" />
+    <attr name="colorNeutral200And600" format="color" />
+    <attr name="colorNeutral300And600" format="color" />
+    <attr name="colorNeutral300AndNeutral700" format="color" />
+    <attr name="colorNeutral400AndNeutral500" format="color" />
+    <attr name="colorNeutral400And600" format="color" />
+    <attr name="colorNeutral500And300" format="color" />
+    <attr name="colorNeutral500And400" format="color" />
+    <attr name="colorNeutral600And300" format="color" />
+    <attr name="colorNeutral600And400" format="color" />
+    <attr name="colorNeutral700And200" format="color" />
+    <attr name="colorNeutral700And100" format="color" />
+    <attr name="colorNeutral900AndWhite" format="color" />
+
+    <attr name="colorBlue600A10AndA20" format="color" />
+    <attr name="colorBlue600A16AndA30" format="color" />
+
+    <attr name="colorViolet400A10AndA20" format="color" />
+    <attr name="colorViolet400A20AndA30" format="color" />
+
+    <declare-styleable name="SpannedGridLayoutManager">
+        <attr name="android:orientation" />
+        <attr name="spanCount" />
+        <attr name="aspectRatio" format="string" />
+    </declare-styleable>
+</resources>

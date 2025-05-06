@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ui.MainActivity">
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonRequestPermissions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="40dp"
+        android:backgroundTint="@color/colorBlue600"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/text_request_permissions"
+        app:cornerRadius="0dp" />
+
+    <TextView
+        android:id="@+id/textViewStatusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginTop="20dp"
+        android:text="Status"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonChooseFile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="@color/colorBlue600"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/text_choose_file"
+        app:cornerRadius="0dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonSend"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="@color/colorBlue600"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:text="@string/text_send_file"
+        app:cornerRadius="0dp" />
+
+    <EditText
+        android:id="@+id/editTextIpAddress"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:backgroundTint="@color/colorBlue600"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:hint="@string/text_ip_address"
+        app:cornerRadius="0dp" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@style/Widget.Material3.LinearProgressIndicator"
+        android:layout_width="200dp"
+        android:layout_height="10dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:max="100"
+        android:progress="20"
+        android:progressTint="@color/colorBlue600" />
+
+</LinearLayout>

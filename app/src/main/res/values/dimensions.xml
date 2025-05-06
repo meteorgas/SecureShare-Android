@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="dimen_continue_button_height">52dp</dimen>
+    <dimen name="dimen_continue_button_margin_bottom">12dp</dimen>
+    <dimen name="dimen_bottom_shadow_height">168dp</dimen>
+    <dimen name="dimen_list_item_height">44dp</dimen>
+    <dimen name="dimen_edit_text_height">48dp</dimen>
+    <dimen name="dimen_drop_down_height">48dp</dimen>
+    <dimen name="dimen_space_between_title_and_content">24dp</dimen>
+
+    <!-- ProfileSection-->
+    <dimen name="dimen_paddingHorizontal">10dp</dimen>
+    <dimen name="dimen_marginStart">6dp
+    </dimen>
+</resources>

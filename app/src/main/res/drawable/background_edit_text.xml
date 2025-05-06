@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/not_focused_edit_text"
+        android:state_focused="false">
+        <shape android:shape="rectangle">
+            <corners android:radius="12dp" />
+
+            <solid android:color="?attr/colorNeutral100AndNeutral800" />
+            <stroke
+                android:width="0.5dp"
+                android:color="?attr/colorNeutral300AndNeutral700" />
+        </shape>
+    </item>
+
+    <item
+        android:id="@+id/focused_edit_text"
+        android:state_focused="true">
+        <layer-list>
+
+            <item>
+                <shape android:shape="rectangle">
+                    <corners android:radius="12dp" />
+                    <gradient
+                        android:endColor="@color/colorViolet400"
+                        android:startColor="@color/colorBlue600" />
+                </shape>
+            </item>
+
+            <item
+                android:bottom="1dp"
+                android:left="1dp"
+                android:right="1dp"
+                android:top="1dp">
+                <shape android:shape="rectangle">
+                    <corners android:radius="12dp" />
+                    <solid android:color="?attr/colorNeutral100AndNeutral800" />
+                </shape>
+            </item>
+
+        </layer-list>
+    </item>
+
+    <transition
+        android:drawable="@drawable/background_search_box"
+        android:fromId="@id/not_focused_edit_text"
+        android:toId="@id/focused_edit_text" />
+</animated-selector>

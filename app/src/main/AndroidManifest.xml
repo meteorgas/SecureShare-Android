@@ -23,7 +23,7 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.FileBeam"
+        android:theme="@style/Base.Theme.FileBeam"
         tools:targetApi="31">
         <activity
             android:name=".ui.MainActivity"

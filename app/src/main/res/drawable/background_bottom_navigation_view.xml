@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The divider line -->
+    <item>
+        <shape android:shape="rectangle">
+            <size android:height="1dp" /> <!-- Divider thickness -->
+            <solid android:color="?colorNeutral200And700" /> <!-- Divider color -->
+        </shape>
+    </item>
+    <!-- The original background for the BottomNavigationView -->
+    <item android:top="1dp">
+        <color android:color="?screenBackgroundColor"/> <!-- Match this color to your BottomNavigationView's background -->
+    </item>
+</layer-list>
