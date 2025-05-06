@@ -1,4 +1,4 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
     <style name="Theme.SecureShare" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">#BFC7FF</item>
         <item name="colorOnPrimary">#000000</item>
@@ -14,62 +14,7 @@
         <item name="colorSurface">#1E1E2F</item>
         <item name="colorOnSurface">#E6E6F2</item>
 
-<!--        <item name="navigationBarColor">#2C2D3E</item>-->
-
         <item name="android:statusBarColor">?attr/colorPrimary</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
 </resources>
-<!--<resources>-->
-<!--    &lt;!&ndash;To enable dark theme, just delete .Dark and change theme in Manifest&ndash;&gt;-->
-<!--    <style name="Theme.FileBeam.Dark" parent="Theme.FileBeam">-->
-<!--        <item name="screenBackgroundColor">@color/colorDarkBackground</item>-->
-<!--        <item name="primaryTextColor">@color/colorNeutral1</item>-->
-<!--        <item name="secondaryTextColor">@color/colorNeutral400</item>-->
-<!--        <item name="errorBorderColor">@color/colorRed400</item>-->
-<!--        <item name="errorInsideColor">@color/colorRed400Alpha15</item>-->
-<!--        <item name="primaryErrorColor">@color/colorRed400</item>-->
-<!--        <item name="progressBarBackground">@color/colorNeutral700</item>-->
-<!--        <item name="colorNeutral300AndNeutral700">@color/colorNeutral700</item>-->
-<!--        <item name="colorNeutral100AndNeutral800">@color/colorNeutral800</item>-->
-<!--        <item name="bottomSheetHandlerColor">@color/colorNeutral700</item>-->
-<!--        <item name="disabledContinueButtonFirstColor">@color/colorBlueDisabledButtonDark</item>-->
-<!--        <item name="disabledContinueButtonSecondColor">@color/colorVioletDisabledButtonDark</item>-->
-<!--        <item name="animatedBorderMiddleFirstColor">@color/colorMiddleBlack700Blue600</item>-->
-<!--        <item name="animatedBorderMiddleSecondColor">@color/colorMiddleBlack700Violet400</item>-->
-<!--        <item name="disabledTextColor">@color/colorDisabledTextDark</item>-->
-<!--        <item name="colorNeutral400AndNeutral500">@color/colorNeutral500</item>-->
-<!--        <item name="considerLaterIconColor">@color/colorNeutral300</item>-->
-<!--        <item name="primaryTextColorReverse">@color/colorNeutral900</item>-->
-<!--        <item name="primaryGrayColor">@color/colorNeutral500</item>-->
-<!--        <item name="loginButtonBackgroundColor">@color/colorNeutral999Alpha20</item>-->
-<!--        <item name="colorNeutral200And700">@color/colorNeutral700</item>-->
-<!--        <item name="colorNeutral700And200">@color/colorNeutral200</item>-->
-<!--        <item name="colorNeutral1AndNeutral999">@color/colorNeutral999</item>-->
-<!--        <item name="colorNeutral200And600">@color/colorNeutral600</item>-->
-<!--        <item name="colorNeutral50And800">@color/colorNeutral800</item>-->
-<!--        <item name="colorNeutral600And300">@color/colorNeutral300</item>-->
-<!--        <item name="colorNeutral300And600">@color/colorNeutral600</item>-->
-<!--        <item name="colorNeutral600And400">@color/colorNeutral400</item>-->
-<!--        <item name="colorBlue600A10AndA20">@color/colorBlue600Alpha20</item>-->
-<!--        <item name="colorViolet400A10AndA20">@color/colorViolet400Alpha20</item>-->
-<!--        <item name="colorScreenBackgroundColorAndNeutral800">@color/colorNeutral800</item>-->
-<!--        <item name="colorNeutral900AndWhite">@color/colorNeutral1</item>-->
-<!--        <item name="colorTransparentAndBlack">@color/colorNeutral999</item>-->
-<!--        <item name="backgroundAuthentication">@drawable/background_authentication_dark</item>-->
-<!--        <item name="backgroundForceUpdate">@drawable/background_force_update_dark</item>-->
-<!--        <item name="colorFloatingBottomSheetBackground">@color/colorNeutral850</item>-->
-<!--        <item name="colorNeutral500And300">@color/colorNeutral300</item>-->
-<!--        <item name="colorNeutral500And400">@color/colorNeutral400</item>-->
-<!--        <item name="colorNeutral700And100">@color/colorNeutral100</item>-->
-<!--        <item name="colorNeutral400And600">@color/colorNeutral600</item>-->
-<!--        <item name="colorNeutral100And800">@color/colorNeutral800</item>-->
-<!--        <item name="colorBlue600A16AndA30">@color/colorBlue600Alpha30</item>-->
-<!--        <item name="colorViolet400A20AndA30">@color/colorViolet400Alpha30</item>-->
-<!--        <item name="colorNeutral1AndNeutral700">@color/colorNeutral700</item>-->
-<!--        <item name="colorNeutral1AndNeutral500">@color/colorNeutral500</item>-->
-<!--        <item name="colorNeutral1AndNeutral600">@color/colorNeutral600</item>-->
-<!--        <item name="colorNeutral1AndNeutral900">@color/colorNeutral900</item>-->
-<!--        <item name="colorNeutral1AndNeutral850">@color/colorNeutral850</item>-->
-<!--    </style>-->
-<!--</resources>-->
