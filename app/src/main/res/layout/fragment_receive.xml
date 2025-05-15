@@ -9,18 +9,6 @@
     tools:context=".ui.MainActivity">
 
     <com.google.android.material.button.MaterialButton
-        android:id="@+id/buttonRequestPermissions"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="40dp"
-        android:backgroundTint="@color/colorPrimary"
-        android:insetTop="0dp"
-        android:insetBottom="0dp"
-        android:text="@string/text_request_permissions"
-        app:cornerRadius="0dp" />
-
-    <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonStart"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -34,7 +22,7 @@
 
     <TextView
         android:id="@+id/textViewStatusText"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginHorizontal="20dp"

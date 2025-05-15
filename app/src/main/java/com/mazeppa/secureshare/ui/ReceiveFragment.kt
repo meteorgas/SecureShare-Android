@@ -10,7 +10,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.data.FileReceiver
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
-import com.mazeppa.secureshare.utils.PermissionHandler
 import kotlinx.coroutines.launch
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
@@ -41,14 +40,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     @SuppressLint("SetTextI18n")
     private fun setListeners() {
         binding.apply {
-            buttonRequestPermissions.setOnClickListener {
-                PermissionHandler.requestPermissions(
-                    permissionLauncher = permissionLauncher,
-                    startActivityForResult = startActivityForResult,
-                    packageName = binding.root.context.packageName,
-                )
-            }
-
             buttonStart.setOnClickListener {
                 lifecycleScope.launch {
                     fileReceiver.start(this@ReceiveFragment)

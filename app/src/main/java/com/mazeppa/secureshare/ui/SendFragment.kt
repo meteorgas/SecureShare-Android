@@ -13,17 +13,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.data.FileSender
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
-import com.mazeppa.secureshare.utils.PermissionHandler
 import kotlinx.coroutines.launch
 
 class SendFragment : Fragment(), FileSender.FileSenderListener {
-
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {}
-    private val startActivityForResult = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {}
 
     private lateinit var fileSender: FileSender
     private var selectedFileUri: Uri? = null
@@ -47,14 +39,6 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     @SuppressLint("SetTextI18n")
     private fun setListeners() {
         binding.apply {
-            buttonRequestPermissions.setOnClickListener {
-                PermissionHandler.requestPermissions(
-                    permissionLauncher = permissionLauncher,
-                    startActivityForResult = startActivityForResult,
-                    packageName = binding.root.context.packageName,
-                )
-            }
-
             val filePickerLauncher = registerForActivityResult(
                 ActivityResultContracts.GetContent()
             ) { uri: Uri? ->
