@@ -5,21 +5,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.data.FileReceiver
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) {}
-    private val startActivityForResult = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {}
     private lateinit var fileReceiver: FileReceiver
     private lateinit var binding: FragmentReceiveBinding
 
@@ -49,14 +44,26 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     }
 
     override fun onStatusUpdate(message: String) {
-        binding.textViewStatusText.text = message
+        lifecycleScope.launch {
+            withContext(Dispatchers.Main) {
+                binding.textViewStatusText.text = message
+            }
+        }
     }
 
     override fun onFileReceived(path: String) {
-        binding.textViewStatusText.text = "File received: $path"
+        lifecycleScope.launch {
+            withContext(Dispatchers.Main) {
+                binding.textViewStatusText.text = "File received: $path"
+            }
+        }
     }
 
     override fun onError(message: String) {
-        binding.textViewStatusText.text = "Error: $message"
+        lifecycleScope.launch {
+            withContext(Dispatchers.Main) {
+                binding.textViewStatusText.text = "Error: $message"
+            }
+        }
     }
 }

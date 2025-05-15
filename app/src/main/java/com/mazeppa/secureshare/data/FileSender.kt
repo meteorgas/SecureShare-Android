@@ -14,6 +14,7 @@ class FileSender(private val context: Context) {
         fun onProgressUpdate(progress: Int)
         fun onComplete()
         fun onError(error: String)
+        fun onTransferStatsUpdate(speedBytesPerSec: Double, remainingSec: Double)
     }
 
     suspend fun sendFile(uri: Uri, ipAddress: String, port: Int, listener: FileSenderListener) {
@@ -38,11 +39,26 @@ class FileSender(private val context: Context) {
                 var totalBytesSent = 0L
                 var bytesRead: Int
 
+                val startTime = System.currentTimeMillis()
+
                 while (inputStream.read(buffer).also { bytesRead = it } != -1) {
                     outputStream.write(buffer, 0, bytesRead)
                     totalBytesSent += bytesRead
+
+                    // Calculate progress
                     val progress = ((totalBytesSent * 100) / fileSize).toInt()
                     listener.onProgressUpdate(progress)
+
+                    // Calculate speed and estimated time
+                    val elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000.0
+                    if (elapsedSeconds > 0) {
+                        val speedBytesPerSec = totalBytesSent / elapsedSeconds
+                        val remainingBytes = fileSize - totalBytesSent
+                        val estimatedRemainingSec = if (speedBytesPerSec > 0)
+                            remainingBytes / speedBytesPerSec else 0.0
+
+                        listener.onTransferStatsUpdate(speedBytesPerSec, estimatedRemainingSec)
+                    }
                 }
 
                 inputStream.close()
