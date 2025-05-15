@@ -12,7 +12,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.data.FileSender
+import com.mazeppa.secureshare.data.SelectedFile
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
+import com.mazeppa.secureshare.databinding.ListItemBinding
+import com.mazeppa.secureshare.utils.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -21,8 +24,22 @@ import kotlinx.coroutines.withContext
 class SendFragment : Fragment(), FileSender.FileSenderListener {
 
     private lateinit var fileSender: FileSender
-    private var selectedFileUri: Uri? = null
+    private val selectedFileUris = mutableListOf<Uri>()
     private lateinit var binding: FragmentSendBinding
+    private val adapter by lazy {
+        RecyclerListAdapter<ListItemBinding, SelectedFile>(
+            onInflate = ListItemBinding::inflate,
+            onBind = { binding, selectedFile, pos ->
+                binding.apply {
+                    textViewFileName.text = selectedFile.name
+                    textViewFileSize.text = selectedFile.size
+                    buttonRemoveFile.setOnClickListener {
+                        selectedFileUris.removeAt(pos)
+                    }
+                }
+            }
+        )
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,9 +54,15 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
+        binding.recyclerView.adapter = adapter
     }
 
-    private val selectedFileUris = mutableListOf<Uri>()
+    override fun onResume() {
+        super.onResume()
+        binding.apply {
+            buttonSend.isEnabled = selectedFileUris.isNotEmpty()
+        }
+    }
 
     @SuppressLint("SetTextI18n")
     private fun setListeners() {
@@ -54,7 +77,19 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
                 if (uris.isNotEmpty()) {
                     val filenames = uris.map { getFileName(it) }
-                    binding.textViewStatusText.text = "Selected: ${filenames.joinToString(", ")}"
+                    val fileSizes = uris.map { formatSize(getFileSize(it)) }
+                    val selectedFiles = uris.mapIndexed { index, uri ->
+                        SelectedFile(
+                            name = filenames[index],
+                            size = fileSizes[index],
+                            uri = uri
+                        )
+                    }
+
+                    buttonSend.isEnabled = true
+                    adapter.submitList(selectedFiles)
+
+                    binding.textViewStatusText.text = "Selected Files:"
                 }
             }
 
@@ -121,8 +156,8 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     }
 
     override fun onTransferStatsUpdate(speedBytesPerSec: Double, remainingSec: Double) {
-        binding.textViewSpeed.text = "Speed: ${formatSize(speedBytesPerSec.toLong())}/s"
-        binding.textViewEstimatedTime.text = "Time left: ${formatTime(remainingSec)}"
+//        binding.textViewSpeed.text = "Speed: ${formatSize(speedBytesPerSec.toLong())}/s"
+//        binding.textViewEstimatedTime.text = "Time left: ${formatTime(remainingSec)}"
     }
 
     private fun formatTime(seconds: Double): String {
@@ -136,8 +171,8 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
             withContext(Dispatchers.Main) {
                 binding.textViewStatusText.text = "File sent successfully!"
                 binding.progressBar.progress = 0
-                binding.textViewSpeed.text = ""
-                binding.textViewEstimatedTime.text = ""
+//                binding.textViewSpeed.text = ""
+//                binding.textViewEstimatedTime.text = ""
             }
         }
     }
