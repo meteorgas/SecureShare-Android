@@ -1,18 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#5B6EF4</color>
+    <!-- Primary Google-style blue -->
+    <color name="colorPrimary">#4285F4</color>           <!-- Google Blue -->
+    <color name="colorPrimaryVariant">#3367D6</color>
     <color name="colorOnPrimary">#FFFFFF</color>
-    <color name="colorPrimaryContainer">#DEE0FF</color>
-    <color name="colorOnPrimaryContainer">#1A1C2D</color>
 
-    <color name="colorSecondary">#A8B0FF</color>
-    <color name="colorOnSecondary">#1A1C2D</color>
-    <color name="colorSecondaryContainer">#E0E3FF</color>
-    <color name="colorOnSecondaryContainer">#1A1C2D</color>
+    <!-- Lighter tint for containers or backgrounds -->
+    <color name="colorPrimaryContainer">#E8F0FE</color>
+    <color name="colorOnPrimaryContainer">#174EA6</color>
 
-    <color name="colorBackground">#FAF9FF</color>
+    <color name="colorBackground">#F5F7FA</color> <!-- Soft, bright, neutral -->
+    <color name="colorBottomNav">#FFFFFF</color>
+    <color name="colorBottomNavSelectedBg">#E8F0FE</color> <!-- Light blue for active tab -->
+
+    <!-- Secondary accent -->
+    <color name="colorSecondary">#AECBFA</color>
+    <color name="colorOnSecondary">#174EA6</color>
+
+    <!-- Background and surfaces -->
     <color name="colorSurface">#FFFFFF</color>
-    <color name="colorOnSurface">#1A1C2D</color>
+    <color name="colorOnSurface">#202124</color>
 
-    <color name="colorBlue300">#7B94FF</color> <!-- Optional ripple or button accent -->
+    <!-- Navigation bar icon selector -->
+    <color name="colorNavSelected">#4285F4</color>
+    <color name="colorNavUnselected">#9AA0A6</color>
 </resources>

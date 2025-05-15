@@ -1,31 +1,24 @@
-<resources>
-    <!-- Base application theme. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.SecureShare" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Primary brand colors -->
-        <item name="colorPrimary">#5B6EF4</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
-        <item name="colorPrimaryContainer">#DEE0FF</item>
-        <item name="colorOnPrimaryContainer">#1A1C2D</item>
+        <!-- Primary branding -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorPrimaryContainer">@color/colorPrimaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer</item>
 
-        <!-- Secondary color -->
-        <item name="colorSecondary">#A8B0FF</item>
-        <item name="colorOnSecondary">#1A1C2D</item>
-        <item name="colorSecondaryContainer">#E0E3FF</item>
-        <item name="colorOnSecondaryContainer">#1A1C2D</item>
+        <!-- Secondary -->
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorOnSecondary">@color/colorOnSecondary</item>
 
-        <!-- Background and surface -->
-        <item name="android:colorBackground">#FAF9FF</item>
-        <item name="colorSurface">#FFFFFF</item>
-        <item name="colorOnSurface">#1A1C2D</item>
+        <!-- Surface and background -->
+        <item name="android:colorBackground">@color/colorBackground</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
 
-        <!-- App bar and status bar -->
-        <item name="android:statusBarColor">?attr/colorPrimary</item>
-        <item name="android:navigationBarColor">?attr/colorPrimary</item>
+        <!-- System bars -->
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
         <item name="android:windowLightStatusBar">true</item>
-
-        <!-- Shapes -->
-        <item name="shapeAppearanceSmallComponent">@style/Shape.Small</item>
-        <item name="shapeAppearanceMediumComponent">@style/Shape.Medium</item>
-        <item name="shapeAppearanceLargeComponent">@style/Shape.Large</item>
     </style>
 </resources>

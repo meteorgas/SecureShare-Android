@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+        <style name="Theme.SecureShare" parent="Theme.Material3.DayNight.NoActionBar">
+                <!-- Primary branding -->
+                <item name="colorPrimary">@color/colorPrimary</item>
+                <item name="colorPrimaryVariant">@color/colorPrimaryVariant</item>
+                <item name="colorOnPrimary">@color/colorOnPrimary</item>
+                <item name="colorPrimaryContainer">@color/colorPrimaryContainer</item>
+                <item name="colorOnPrimaryContainer">@color/colorOnPrimaryContainer</item>
+
+                <!-- Secondary -->
+                <item name="colorSecondary">@color/colorSecondary</item>
+                <item name="colorOnSecondary">@color/colorOnSecondary</item>
+
+                <!-- Surface and background -->
+                <item name="android:colorBackground">@color/colorBackground</item>
+                <item name="colorSurface">@color/colorSurface</item>
+                <item name="colorOnSurface">@color/colorOnSurface</item>
+
+                <!-- System bars -->
+                <item name="android:statusBarColor">@android:color/white</item>
+                <item name="android:navigationBarColor">@android:color/white</item>
+                <item name="android:windowLightStatusBar">true</item>
+                <item name="android:windowLightNavigationBar">true</item>
+        </style>
+</resources>

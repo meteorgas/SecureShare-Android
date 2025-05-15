@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:backgroundTint="?attr/colorNeutral900AndWhite"
+    android:backgroundTint="@color/colorBackground"
     android:paddingVertical="8dp"
     app:cardCornerRadius="8dp"
     tools:ignore="HardcodedText">
@@ -24,7 +24,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
-            app:tint="?primaryTextColorReverse" />
+            app:tint="@color/colorPrimary" />
 
         <TextView
             android:id="@+id/textViewErrorMessage"
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_marginEnd="12dp"
-            android:textColor="?primaryTextColorReverse"
+            android:textColor="@color/colorPrimary"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/imageViewInfo"
