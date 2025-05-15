@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "FileBeam"
+rootProject.name = "SecureShare"
 include ':app'

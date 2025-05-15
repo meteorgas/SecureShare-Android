@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.utils
+package com.mazeppa.secureshare.utils
 
 import android.Manifest
 import android.content.Intent

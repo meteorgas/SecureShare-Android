@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.data
+package com.mazeppa.secureshare.data
 
 import android.os.Environment
 import kotlinx.coroutines.Dispatchers

@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.ui
+package com.mazeppa.secureshare.ui
 
 import android.annotation.SuppressLint
 import android.net.Uri
@@ -11,9 +11,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.filebeam.data.FileSender
-import com.mazeppa.filebeam.databinding.FragmentSendBinding
-import com.mazeppa.filebeam.utils.PermissionHandler
+import com.mazeppa.secureshare.data.FileSender
+import com.mazeppa.secureshare.databinding.FragmentSendBinding
+import com.mazeppa.secureshare.utils.PermissionHandler
 import kotlinx.coroutines.launch
 
 class SendFragment : Fragment(), FileSender.FileSenderListener {

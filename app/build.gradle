@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.mazeppa.filebeam'
+    namespace 'com.mazeppa.secureshare'
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.mazeppa.filebeam"
+        applicationId "com.mazeppa.secureshare"
         minSdk 24
         targetSdk 35
         versionCode 1

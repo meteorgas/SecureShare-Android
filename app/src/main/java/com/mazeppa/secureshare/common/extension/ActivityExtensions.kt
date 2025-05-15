@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.common.extension
+package com.mazeppa.secureshare.common.extension
 
 import android.app.Activity
 import android.content.Context
@@ -21,7 +21,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
-import com.mazeppa.filebeam.BuildConfig
+import com.mazeppa.secureshare.BuildConfig
 import java.io.File
 import kotlin.reflect.KClass
 

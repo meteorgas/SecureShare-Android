@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.common.base
+package com.mazeppa.secureshare.common.base
 
 import android.content.Context
 import android.content.res.Configuration
@@ -9,9 +9,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.viewbinding.ViewBinding
 import com.google.android.material.snackbar.Snackbar
-import com.mazeppa.filebeam.common.extension.configureSystemBars
-import com.mazeppa.filebeam.common.extension.isLightMode
-import com.mazeppa.filebeam.databinding.LayoutSnackbarBinding
+import com.mazeppa.secureshare.common.extension.configureSystemBars
+import com.mazeppa.secureshare.common.extension.isLightMode
+import com.mazeppa.secureshare.databinding.LayoutSnackbarBinding
 
 abstract class BaseActivity<Binding : ViewBinding> : AppCompatActivity() {
 

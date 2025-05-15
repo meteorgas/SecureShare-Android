@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.common.base
+package com.mazeppa.secureshare.common.base
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle

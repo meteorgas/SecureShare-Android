@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.common.extension
+package com.mazeppa.secureshare.common.extension
 
 import android.content.Context
 import android.net.ConnectivityManager

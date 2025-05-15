@@ -1,14 +1,14 @@
-package com.mazeppa.filebeam.ui
+package com.mazeppa.secureshare.ui
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
-import com.mazeppa.filebeam.R
-import com.mazeppa.filebeam.common.base.BaseActivity
-import com.mazeppa.filebeam.data.FileReceiver
-import com.mazeppa.filebeam.databinding.ActivityMainBinding
+import com.mazeppa.secureshare.R
+import com.mazeppa.secureshare.common.base.BaseActivity
+import com.mazeppa.secureshare.data.FileReceiver
+import com.mazeppa.secureshare.databinding.ActivityMainBinding
 import org.json.JSONObject
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {

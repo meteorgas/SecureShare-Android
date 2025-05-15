@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.common.base
+package com.mazeppa.secureshare.common.base
 
 import android.os.Handler
 import android.os.Looper

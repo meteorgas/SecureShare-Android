@@ -1,11 +1,10 @@
-package com.mazeppa.filebeam.data
+package com.mazeppa.secureshare.data
 
 import android.content.Context
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.DataOutputStream
-import java.io.InputStream
 import java.net.Socket
 
 class FileSender(private val context: Context) {

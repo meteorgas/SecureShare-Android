@@ -7,13 +7,13 @@
 
     <fragment
         android:id="@+id/sendFragment"
-        android:name="com.mazeppa.filebeam.ui.SendFragment"
+        android:name="com.mazeppa.secureshare.ui.SendFragment"
         android:label="Send"
         tools:layout="@layout/fragment_send" />
 
     <fragment
         android:id="@+id/receiveFragment"
-        android:name="com.mazeppa.filebeam.ui.ReceiveFragment"
+        android:name="com.mazeppa.secureshare.ui.ReceiveFragment"
         android:label="Receive"
         tools:layout="@layout/fragment_receive" />
 </navigation>

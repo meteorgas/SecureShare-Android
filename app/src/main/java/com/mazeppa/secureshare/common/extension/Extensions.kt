@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.common.extension
+package com.mazeppa.secureshare.common.extension
 
 import android.util.DisplayMetrics
 import android.util.TypedValue

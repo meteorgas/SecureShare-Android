@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.ui
+package com.mazeppa.secureshare.ui
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -8,9 +8,9 @@ import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.filebeam.data.FileReceiver
-import com.mazeppa.filebeam.databinding.FragmentReceiveBinding
-import com.mazeppa.filebeam.utils.PermissionHandler
+import com.mazeppa.secureshare.data.FileReceiver
+import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
+import com.mazeppa.secureshare.utils.PermissionHandler
 import kotlinx.coroutines.launch
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {

@@ -1,4 +1,4 @@
-package com.mazeppa.filebeam.common.extension
+package com.mazeppa.secureshare.common.extension
 
 import android.app.Activity
 import android.content.Intent
@@ -13,7 +13,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.findNavController
-import com.mazeppa.filebeam.R
+import com.mazeppa.secureshare.R
 import java.io.Serializable
 import kotlin.reflect.KClass
 
