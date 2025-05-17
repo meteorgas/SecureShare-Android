@@ -1,10 +1,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/sendFragment"
-        android:icon="@android:drawable/ic_menu_upload"
+        android:icon="@drawable/ic_send"
         android:title="@string/text_send" />
     <item
         android:id="@+id/receiveFragment"
-        android:icon="@android:drawable/ic_menu_save"
+        android:icon="@drawable/ic_receive"
         android:title="@string/text_receive" />
 </menu>

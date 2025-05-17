@@ -1,7 +1,10 @@
 package com.mazeppa.secureshare.ui
 
 import android.annotation.SuppressLint
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.view.LayoutInflater
@@ -11,6 +14,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.mazeppa.secureshare.R
 import com.mazeppa.secureshare.data.FileSender
 import com.mazeppa.secureshare.data.SelectedFile
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
@@ -26,15 +30,41 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private lateinit var fileSender: FileSender
     private val selectedFileUris = mutableListOf<Uri>()
     private lateinit var binding: FragmentSendBinding
+    private var onRemoveFile: ((Uri) -> Unit)? = null
     private val adapter by lazy {
         RecyclerListAdapter<ListItemBinding, SelectedFile>(
             onInflate = ListItemBinding::inflate,
             onBind = { binding, selectedFile, pos ->
                 binding.apply {
+                    context?.apply {
+                        val mime = contentResolver.getType(selectedFile.uri) ?: ""
+                        if (mime.startsWith("image/")) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                try {
+                                    val source = ImageDecoder.createSource(contentResolver, selectedFile.uri)
+                                    val bitmap = ImageDecoder.decodeBitmap(source)
+                                    imageViewFileIcon.setImageBitmap(bitmap)
+                                } catch (_: Exception) {
+                                    imageViewFileIcon.setImageResource(R.drawable.ic_file)
+                                }
+                            } else {
+                                try {
+                                    val inputStream = contentResolver.openInputStream(selectedFile.uri)
+                                    val bitmap = BitmapFactory.decodeStream(inputStream)
+                                    imageViewFileIcon.setImageBitmap(bitmap)
+                                } catch (_: Exception) {
+                                    imageViewFileIcon.setImageResource(R.drawable.ic_file)
+                                }
+                            }
+                        } else {
+                            imageViewFileIcon.setImageResource(R.drawable.ic_file)
+                        }
+                    }
+
                     textViewFileName.text = selectedFile.name
                     textViewFileSize.text = selectedFile.size
                     buttonRemoveFile.setOnClickListener {
-                        selectedFileUris.removeAt(pos)
+                        onRemoveFile?.invoke(selectedFile.uri)
                     }
                 }
             }
@@ -55,6 +85,18 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
         binding.recyclerView.adapter = adapter
+        onRemoveFile = { uri ->
+            selectedFileUris.remove(uri)
+
+            val updatedList = selectedFileUris.map { uri ->
+                SelectedFile(
+                    name = getFileName(uri),
+                    size = formatSize(getFileSize(uri)),
+                    uri = uri
+                )
+            }
+            adapter.submitList(updatedList)
+        }
     }
 
     override fun onResume() {
