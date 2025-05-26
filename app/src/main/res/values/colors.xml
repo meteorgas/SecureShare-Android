@@ -5,6 +5,8 @@
     <color name="colorPrimaryVariant">#3367D6</color>
     <color name="colorOnPrimary">#FFFFFF</color>
 
+    <color name="colorWhiteTone1">#FCFCFF</color>
+
     <!-- Lighter tint for containers or backgrounds -->
     <color name="colorPrimaryContainer">#E8F0FE</color>
     <color name="colorOnPrimaryContainer">#174EA6</color>

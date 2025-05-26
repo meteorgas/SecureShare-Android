@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.data
+package com.mazeppa.secureshare.data.lan
 
 import android.os.Environment
 import kotlinx.coroutines.Dispatchers

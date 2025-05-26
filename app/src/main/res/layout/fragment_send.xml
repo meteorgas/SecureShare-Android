@@ -5,7 +5,7 @@
     android:id="@+id/layoutSendFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/colorBackground"
+    android:background="@color/colorWhiteTone1"
     android:orientation="vertical"
     android:padding="24dp">
 
@@ -63,6 +63,15 @@
             android:textColor="@android:color/black"
             android:textSize="14sp" />
     </LinearLayout>
+
+    <Button
+        android:id="@+id/buttonDiscoverNearbyDevices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@color/colorPrimary"
+        android:text="Discover Nearby Devices"
+        android:textColor="@android:color/white" />
 
     <Button
         android:id="@+id/buttonChooseFile"

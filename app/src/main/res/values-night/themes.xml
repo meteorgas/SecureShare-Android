@@ -14,7 +14,8 @@
         <item name="colorSurface">#1E1E2F</item>
         <item name="colorOnSurface">#E6E6F2</item>
 
-        <item name="android:statusBarColor">?attr/colorPrimary</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/colorWhiteTone1</item>
+        <item name="android:navigationBarColor">@color/colorWhiteTone1</item>
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>

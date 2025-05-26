@@ -1,7 +1,8 @@
-package com.mazeppa.secureshare.data
+package com.mazeppa.secureshare.data.lan
 
 import android.content.Context
 import android.net.Uri
+import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.DataOutputStream
@@ -75,7 +76,7 @@ class FileSender(private val context: Context) {
     private fun getFileName(uri: Uri): String? {
         val cursor = context.contentResolver.query(uri, null, null, null, null)
         return cursor?.use {
-            val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             if (it.moveToFirst()) it.getString(nameIndex) else null
         }
     }
@@ -83,7 +84,7 @@ class FileSender(private val context: Context) {
     private fun getFileSize(uri: Uri): Long {
         val cursor = context.contentResolver.query(uri, null, null, null, null)
         return cursor?.use {
-            val sizeIndex = it.getColumnIndex(android.provider.OpenableColumns.SIZE)
+            val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
             if (it.moveToFirst()) it.getLong(sizeIndex) else 0L
         } ?: 0L
     }

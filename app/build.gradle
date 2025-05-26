@@ -50,4 +50,16 @@ dependencies {
     implementation libs.androidx.navigation.fragment.ktx
     implementation libs.androidx.navigation.ui.ktx
     implementation libs.material.v1110
+    implementation libs.okhttp
+    implementation (libs.socket.io.client) {
+        exclude group: 'org.json', module: 'json'
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "io.socket" && requested.name == "engine.io-client") {
+            useVersion("1.0.0")
+        }
+    }
 }

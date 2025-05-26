@@ -7,7 +7,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.mazeppa.secureshare.R
 import com.mazeppa.secureshare.common.base.BaseActivity
-import com.mazeppa.secureshare.data.FileReceiver
+import com.mazeppa.secureshare.data.lan.FileReceiver
 import com.mazeppa.secureshare.databinding.ActivityMainBinding
 import org.json.JSONObject
 

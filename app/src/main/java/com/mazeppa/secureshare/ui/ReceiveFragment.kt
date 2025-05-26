@@ -7,7 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.secureshare.data.FileReceiver
+import com.mazeppa.secureshare.data.lan.FileReceiver
+import com.mazeppa.secureshare.data.PeerDiscovery
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,6 +39,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             buttonStart.setOnClickListener {
                 lifecycleScope.launch {
                     fileReceiver.start(this@ReceiveFragment)
+                    PeerDiscovery.startPeerDiscoveryReceiver {}
                 }
             }
         }

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,8 +16,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
-import com.mazeppa.secureshare.data.FileSender
+import com.mazeppa.secureshare.data.lan.FileSender
 import com.mazeppa.secureshare.data.SelectedFile
+import com.mazeppa.secureshare.data.client_server.FileUploader.uploadFileToServer
+import com.mazeppa.secureshare.data.p2p.SocketManager
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
 import com.mazeppa.secureshare.databinding.ListItemBinding
 import com.mazeppa.secureshare.utils.generic_recycler_view.RecyclerListAdapter
@@ -26,6 +29,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SendFragment : Fragment(), FileSender.FileSenderListener {
+
+    companion object {
+        private const val TAG = "SendFragment"
+    }
 
     private lateinit var fileSender: FileSender
     private val selectedFileUris = mutableListOf<Uri>()
@@ -135,23 +142,44 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                 }
             }
 
+//            SocketManager.connect(userId = "android-1234")
+
+            binding.buttonDiscoverNearbyDevices.setOnClickListener {
+                Log.i(TAG, "button DiscoverNearbyDevices clicked")
+                SocketManager.connect(userId = "android-1234")
+                SocketManager.discoverPeer("mac-5678")
+            }
+
+//            buttonDiscoverNearbyDevices.setOnClickListener {
+//                PeerDiscovery.discoverPeers { address ->
+//                    lifecycleScope.launch {
+//                        binding.textViewStatusText.text = "Discovered peer: $address"
+//                    }
+//                }
+//            }
+
             buttonChooseFile.setOnClickListener {
                 filePickerLauncher.launch(arrayOf("*/*"))
             }
 
             buttonSend.setOnClickListener {
-                val ip = editTextIpAddress.text.toString()
-                val port = 5050
+//                val ip = editTextIpAddress.text.toString()
+//                val port = 5050
 
-                if (ip.isBlank() || selectedFileUris.isEmpty()) {
-                    Toast.makeText(context, "IP address or files missing", Toast.LENGTH_SHORT)
-                        .show()
-                    return@setOnClickListener
-                }
+//                if (ip.isBlank() || selectedFileUris.isEmpty()) {
+//                    Toast.makeText(context, "IP address or files missing", Toast.LENGTH_SHORT)
+//                        .show()
+//                    return@setOnClickListener
+//                }
 
                 lifecycleScope.launch {
                     selectedFileUris.forEach { uri ->
-                        fileSender.sendFile(uri, ip, port, this@SendFragment)
+                        uploadFileToServer(requireContext(), uri, "http://192.168.57.167:5151/upload") { success, message ->
+                            requireActivity().runOnUiThread {
+                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+//                        fileSender.sendFile(uri, ip, port, this@SendFragment)
                         delay(1000) // small delay between files (optional)
                     }
                 }

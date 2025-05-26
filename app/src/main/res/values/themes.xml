@@ -17,8 +17,8 @@
         <item name="colorOnSurface">@color/colorOnSurface</item>
 
         <!-- System bars -->
-        <item name="android:statusBarColor">@android:color/white</item>
-        <item name="android:navigationBarColor">@android:color/white</item>
+        <item name="android:statusBarColor">@color/colorWhiteTone1</item>
+        <item name="android:navigationBarColor">@color/colorWhiteTone1</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
 </resources>
