@@ -16,6 +16,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
+import com.mazeppa.secureshare.common.constant.BASE_URL
 import com.mazeppa.secureshare.data.lan.FileSender
 import com.mazeppa.secureshare.data.SelectedFile
 import com.mazeppa.secureshare.data.client_server.FileUploader.uploadFileToServer
@@ -174,7 +175,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
                 lifecycleScope.launch {
                     selectedFileUris.forEach { uri ->
-                        uploadFileToServer(requireContext(), uri, "http://192.168.57.167:5151/upload") { success, message ->
+                        uploadFileToServer(requireContext(), uri, "$BASE_URL/upload") { success, message ->
                             requireActivity().runOnUiThread {
                                 Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
                             }
