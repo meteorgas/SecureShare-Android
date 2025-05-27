@@ -1,6 +1,9 @@
-package com.mazeppa.secureshare.data
+package com.mazeppa.secureshare.data.lan
 
+import android.os.Build
+import android.util.Log
 import com.mazeppa.secureshare.util.constant.DiscoveryConfig
+import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
@@ -8,20 +11,29 @@ import java.net.SocketTimeoutException
 
 object PeerDiscovery {
 
-    fun startPeerDiscoveryReceiver(onDiscovered: (InetAddress) -> Unit) {
+    private const val TAG = "PeerDiscovery"
+
+    fun startPeerDiscoveryReceiver() {
         Thread {
             try {
                 val socket = DatagramSocket(DiscoveryConfig.BROADCAST_PORT, InetAddress.getByName("0.0.0.0"))
                 socket.broadcast = true
                 val buffer = ByteArray(1024)
+                Log.d(TAG, "Peer discovery receiver started on port ${DiscoveryConfig.BROADCAST_PORT}")
 
                 while (true) {
                     val packet = DatagramPacket(buffer, buffer.size)
                     socket.receive(packet)
-
                     val message = String(packet.data, 0, packet.length)
+                    Log.d(TAG, "Received discovery packet: $message from ${packet.address.hostAddress}")
+
                     if (message == DiscoveryConfig.BROADCAST_MESSAGE) {
-                        val response = DiscoveryConfig.RESPONSE_MESSAGE.toByteArray()
+                        val deviceName = Build.MODEL ?: "Unknown Device"
+                        val responseJson = JSONObject().apply {
+                            put("deviceName", deviceName)
+                        }.toString()
+
+                        val response = responseJson.toByteArray()
                         val responsePacket = DatagramPacket(
                             response,
                             response.size,
@@ -29,15 +41,16 @@ object PeerDiscovery {
                             packet.port
                         )
                         socket.send(responsePacket)
+                        Log.d(TAG, "Sent response to ${packet.address.hostAddress}")
                     }
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Receiver error: ${e.message}", e)
             }
         }.start()
     }
 
-    fun discoverPeers(onPeerFound: (InetAddress) -> Unit) {
+    fun discoverPeers(onPeerFound: (deviceName: String?, ip: String) -> Unit) {
         Thread {
             try {
                 val socket = DatagramSocket()
@@ -47,30 +60,44 @@ object PeerDiscovery {
                 val packet = DatagramPacket(
                     data,
                     data.size,
-                    InetAddress.getByName("255.255.255.255"),  // Use local subnet broadcast if needed
+                    InetAddress.getByName("255.255.255.255"),
                     DiscoveryConfig.BROADCAST_PORT
                 )
                 socket.send(packet)
+                Log.d(TAG, "Broadcast discovery message sent")
 
                 val buffer = ByteArray(1024)
-                socket.soTimeout = 3000 // wait for responses (3s)
+                socket.soTimeout = 3000
 
                 while (true) {
-                    val responsePacket = DatagramPacket(buffer, buffer.size)
                     try {
+                        val responsePacket = DatagramPacket(buffer, buffer.size)
                         socket.receive(responsePacket)
                         val message = String(responsePacket.data, 0, responsePacket.length)
-                        if (message == DiscoveryConfig.RESPONSE_MESSAGE) {
-                            onPeerFound(responsePacket.address)
+                        val ip = responsePacket.address.hostAddress
+
+                        try {
+                            val json = JSONObject(message)
+                            val name = json.optString("deviceName", null)
+                            Log.d(TAG, "Discovered peer: $name ($ip)")
+                            if (ip != null) {
+                                onPeerFound(name, ip)
+                            }
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Failed to parse device name JSON: ${e.message}")
+                            if (ip != null) {
+                                onPeerFound(null, ip)
+                            }
                         }
                     } catch (e: SocketTimeoutException) {
-                        break // done waiting
+                        Log.d(TAG, "Discovery timeout")
+                        break
                     }
                 }
 
                 socket.close()
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Discovery error: ${e.message}", e)
             }
         }.start()
     }

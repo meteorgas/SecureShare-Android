@@ -6,12 +6,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.secureshare.util.constant.BASE_URL
+import com.mazeppa.secureshare.data.lan.PeerDiscovery
 import com.mazeppa.secureshare.data.client_server.FileDownloader
-import com.mazeppa.secureshare.data.client_server.FileFetcher
 import com.mazeppa.secureshare.data.client_server.SharedFile
 import com.mazeppa.secureshare.data.lan.FileReceiver
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
@@ -57,6 +55,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
+        PeerDiscovery.startPeerDiscoveryReceiver()
         binding.recyclerView.adapter = adapter
         onDownloadFile = { url, name ->
             Log.i(TAG, "Downloading file from URL: $url")
@@ -73,24 +72,22 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         binding.apply {
             buttonStart.setOnClickListener {
                 lifecycleScope.launch {
-                    FileFetcher.fetchFileList(BASE_URL) { files, error ->
-                        requireActivity().runOnUiThread {
-                            if (files != null) {
-                                // Pass to your RecyclerView adapter
-                                Log.i(TAG, "Files fetched: ${files}")
-                                adapter.submitList(files)
-                            } else {
-                                Toast.makeText(
-                                    requireContext(),
-                                    error ?: "Unknown error",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
-
-//                    fileReceiver.start(this@ReceiveFragment)
-//                    PeerDiscovery.startPeerDiscoveryReceiver {}
+//                    FileFetcher.fetchFileList(BASE_URL) { files, error ->
+//                        requireActivity().runOnUiThread {
+//                            if (files != null) {
+//                                // Pass to your RecyclerView adapter
+//                                Log.i(TAG, "Files fetched: ${files}")
+//                                adapter.submitList(files)
+//                            } else {
+//                                Toast.makeText(
+//                                    requireContext(),
+//                                    error ?: "Unknown error",
+//                                    Toast.LENGTH_SHORT
+//                                ).show()
+//                            }
+//                        }
+//                    }
+                    fileReceiver.start(this@ReceiveFragment)
                 }
             }
         }

@@ -35,7 +35,7 @@
             android:layout_margin="4dp"
             android:layoutAnimation="@anim/layout_animation"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:listitem="@layout/list_item" />
+            tools:listitem="@layout/list_item_file" />
 
         <View
             android:id="@+id/viewBackground"
@@ -85,7 +85,7 @@
             android:layout_margin="10dp"
             android:layoutAnimation="@anim/layout_animation"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:listitem="@layout/list_item" />
+            tools:listitem="@layout/list_item_file" />
     </com.google.android.material.card.MaterialCardView>
 
 

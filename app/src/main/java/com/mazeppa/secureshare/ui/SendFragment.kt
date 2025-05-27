@@ -6,22 +6,28 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
+import com.mazeppa.secureshare.data.lan.DeviceInfo
+import com.mazeppa.secureshare.data.lan.PeerDiscovery
 import com.mazeppa.secureshare.data.SelectedFile
 import com.mazeppa.secureshare.data.client_server.FileUploader.getFileName
 import com.mazeppa.secureshare.data.lan.FileSender
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
-import com.mazeppa.secureshare.databinding.ListItemBinding
+import com.mazeppa.secureshare.databinding.ListItemDeviceBinding
+import com.mazeppa.secureshare.databinding.ListItemFileBinding
 import com.mazeppa.secureshare.util.formatSize
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import com.mazeppa.secureshare.util.getFileSize
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -35,9 +41,9 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private val selectedFileUris = mutableListOf<Uri>()
     private lateinit var binding: FragmentSendBinding
     private var onRemoveFile: ((Uri) -> Unit)? = null
-    private val adapter by lazy {
-        RecyclerListAdapter<ListItemBinding, SelectedFile>(
-            onInflate = ListItemBinding::inflate,
+    private val selectedFilesAdapter by lazy {
+        RecyclerListAdapter<ListItemFileBinding, SelectedFile>(
+            onInflate = ListItemFileBinding::inflate,
             onBind = { binding, selectedFile, pos ->
                 binding.apply {
                     context?.apply {
@@ -77,6 +83,22 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         )
     }
 
+    private var onSendFilesClicked: ((String) -> Unit)? = null
+    private val devicesAdapter by lazy {
+        RecyclerListAdapter<ListItemDeviceBinding, DeviceInfo>(
+            onInflate = ListItemDeviceBinding::inflate,
+            onBind = { binding, deviceInfo, pos ->
+                binding.apply {
+                    textViewDeviceName.text = deviceInfo.name
+                    textViewIpAddress.text = deviceInfo.ipAddress
+                    buttonSendFiles.setOnClickListener {
+                        onSendFilesClicked?.invoke(deviceInfo.ipAddress)
+                    }
+                }
+            }
+        )
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -90,7 +112,12 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
-        binding.recyclerViewFiles.adapter = adapter
+
+        binding.recyclerViewFiles.adapter = selectedFilesAdapter
+        binding.recyclerViewDevices.adapter = devicesAdapter
+
+        discoverDevices()
+
         onRemoveFile = { uri ->
             selectedFileUris.remove(uri)
 
@@ -102,16 +129,46 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                     uri = uri
                 )
             }
-            adapter.submitList(updatedList)
+            selectedFilesAdapter.submitList(updatedList)
+        }
+
+        onSendFilesClicked = onSendFilesClicked@{ ipAddress ->
+            val port = 5050
+
+            if (ipAddress.isBlank() || selectedFileUris.isEmpty()) {
+                Toast.makeText(context, "IP address or files missing", Toast.LENGTH_SHORT)
+                    .show()
+                return@onSendFilesClicked
+            }
+
+            lifecycleScope.launch {
+                selectedFileUris.forEach { uri ->
+                    fileSender.sendFile(uri, ipAddress, port, this@SendFragment)
+                    delay(1000) // small delay between files (optional)
+                }
+            }
         }
     }
 
     override fun onResume() {
         super.onResume()
         checkAddFileButtonVisibility()
-//        binding.apply {
-//            buttonSend.isEnabled = selectedFileUris.isNotEmpty()
-//        }
+    }
+
+    private fun discoverDevices() {
+        val set = mutableSetOf<DeviceInfo>()
+        PeerDiscovery.discoverPeers { name, ip ->
+//            if (name.isNullOrBlank() || ip.isBlank()) {
+//                Log.w("PeerDiscovery", "Received empty device name or IP")
+//                return@discoverPeers
+//            }
+            set.add(DeviceInfo(name.toString(), ip))
+            Log.d("PeerDiscovery", "Discovered peer: $name $ip")
+
+            activity?.runOnUiThread {
+                devicesAdapter.submitList(set.toList())
+            }
+        }
     }
 
     private fun checkAddFileButtonVisibility() {
@@ -146,54 +203,20 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                         )
                     }
 
-//                    buttonSend.isEnabled = true
-                    adapter.submitList(selectedFiles)
+                    selectedFilesAdapter.submitList(selectedFiles)
                 }
             }
 
-            viewBackground.setOnClickListener {
-                filePickerLauncher.launch(arrayOf("*/*"))
+            listOf(viewBackground, textViewAddFile).forEach { view ->
+                view.setOnClickListener {
+                    filePickerLauncher.launch(arrayOf("*/*"))
+                }
             }
-            textViewAddFile.setOnClickListener {
-                filePickerLauncher.launch(arrayOf("*/*"))
-            }
-//            listOf(viewBackground, textViewAddFile).forEach { view ->
-//                view.setOnClickListener {
-//                    filePickerLauncher.launch(arrayOf("*/*"))
-//                }
-//            }
 
 //            binding.buttonDiscoverNearbyDevices.setOnClickListener {
 //                Log.i(TAG, "button DiscoverNearbyDevices clicked")
 //                SocketManager.connect(userId = "android-1234")
 //                SocketManager.discoverPeer("mac-5678")
-//            }
-//
-//            buttonSend.setOnClickListener {
-////                val ip = editTextIpAddress.text.toString()
-////                val port = 5050
-//
-////                if (ip.isBlank() || selectedFileUris.isEmpty()) {
-////                    Toast.makeText(context, "IP address or files missing", Toast.LENGTH_SHORT)
-////                        .show()
-////                    return@setOnClickListener
-////                }
-//
-//                lifecycleScope.launch {
-//                    selectedFileUris.forEach { uri ->
-//                        uploadFileToServer(
-//                            requireContext(),
-//                            uri,
-//                            "$BASE_URL/upload"
-//                        ) { success, message ->
-//                            requireActivity().runOnUiThread {
-//                                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-//                            }
-//                        }
-////                        fileSender.sendFile(uri, ip, port, this@SendFragment)
-//                        delay(1000) // small delay between files (optional)
-//                    }
-//                }
 //            }
         }
     }
