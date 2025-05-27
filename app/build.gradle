@@ -51,6 +51,7 @@ dependencies {
     implementation libs.androidx.navigation.ui.ktx
     implementation libs.material.v1110
     implementation libs.okhttp
+    implementation libs.nanohttpd
     implementation (libs.socket.io.client) {
         exclude group: 'org.json', module: 'json'
     }

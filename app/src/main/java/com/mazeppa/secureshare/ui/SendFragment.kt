@@ -1,5 +1,7 @@
 package com.mazeppa.secureshare.ui
 
+import android.R.attr.name
+import android.R.attr.port
 import android.annotation.SuppressLint
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
@@ -7,6 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.util.Log.i
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,11 +18,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
-import com.mazeppa.secureshare.data.lan.DeviceInfo
-import com.mazeppa.secureshare.data.lan.PeerDiscovery
 import com.mazeppa.secureshare.data.SelectedFile
 import com.mazeppa.secureshare.data.client_server.FileUploader.getFileName
+import com.mazeppa.secureshare.data.lan.DeviceInfo
 import com.mazeppa.secureshare.data.lan.FileSender
+import com.mazeppa.secureshare.data.lan.PeerDiscovery
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
 import com.mazeppa.secureshare.databinding.ListItemDeviceBinding
 import com.mazeppa.secureshare.databinding.ListItemFileBinding
@@ -30,6 +33,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import okio.IOException
+import org.json.JSONObject
 
 class SendFragment : Fragment(), FileSender.FileSenderListener {
 
@@ -92,8 +104,17 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                     textViewDeviceName.text = deviceInfo.name
                     textViewIpAddress.text = deviceInfo.ipAddress
                     buttonSendFiles.setOnClickListener {
+                        if (selectedFileUris.isEmpty()) {
+                            Toast.makeText(
+                                context,
+                                "No files selected to send",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@setOnClickListener
+                        }
                         onSendFilesClicked?.invoke(deviceInfo.ipAddress)
                     }
+                    buttonSendFiles.isEnabled = selectedFileUris.isEmpty()
                 }
             }
         )
@@ -133,20 +154,47 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         }
 
         onSendFilesClicked = onSendFilesClicked@{ ipAddress ->
-            val port = 5050
-
             if (ipAddress.isBlank() || selectedFileUris.isEmpty()) {
                 Toast.makeText(context, "IP address or files missing", Toast.LENGTH_SHORT)
                     .show()
                 return@onSendFilesClicked
             }
 
-            lifecycleScope.launch {
-                selectedFileUris.forEach { uri ->
-                    fileSender.sendFile(uri, ipAddress, port, this@SendFragment)
-                    delay(1000) // small delay between files (optional)
+            val targetIp = ipAddress
+            val targetPort = 5050
+            val fileName = selectedFileUris.firstOrNull()?.let { getFileName(requireContext(), it) } ?: return@onSendFilesClicked
+
+            val json = JSONObject()
+            json.put("fileName", fileName)
+
+            val requestBody = json.toString().toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("http://$targetIp:$targetPort/invite")
+                .post(requestBody)
+                .build()
+
+            OkHttpClient().newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("Invitation", "Failed to send invite: ${e.message}")
                 }
-            }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.isSuccessful) {
+                        Log.d("Invitation", "Invite accepted. Proceed to send file.")
+                        // Now call your fileSender.sendFile(...)
+                        lifecycleScope.launch {
+                            selectedFileUris.forEach { uri ->
+                                Log.i(TAG, "Sending file: ${getFileName(requireContext(), uri)} to $ipAddress")
+                                fileSender.sendFile(uri, ipAddress, port, this@SendFragment)
+                                delay(1000)
+                            }
+                        }
+                    } else {
+                        Log.e("Invitation", "Invite rejected or failed: ${response.code}")
+                    }
+                }
+            })
         }
     }
 
@@ -158,10 +206,10 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private fun discoverDevices() {
         val set = mutableSetOf<DeviceInfo>()
         PeerDiscovery.discoverPeers { name, ip ->
-//            if (name.isNullOrBlank() || ip.isBlank()) {
-//                Log.w("PeerDiscovery", "Received empty device name or IP")
-//                return@discoverPeers
-//            }
+            if (name.isNullOrBlank() || ip.isBlank()) {
+                Log.w("PeerDiscovery", "Received empty device name or IP")
+                return@discoverPeers
+            }
             set.add(DeviceInfo(name.toString(), ip))
             Log.d("PeerDiscovery", "Discovered peer: $name $ip")
 
@@ -213,14 +261,11 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                 }
             }
 
-//            binding.buttonDiscoverNearbyDevices.setOnClickListener {
-//                Log.i(TAG, "button DiscoverNearbyDevices clicked")
-//                SocketManager.connect(userId = "android-1234")
-//                SocketManager.discoverPeer("mac-5678")
-//            }
+            buttonRefreshDevices.setOnClickListener {
+                discoverDevices()
+            }
         }
     }
-
 
     override fun onStatusUpdate(message: String) {
         lifecycleScope.launch {
