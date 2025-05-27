@@ -206,7 +206,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private fun discoverDevices() {
         val set = mutableSetOf<DeviceInfo>()
         PeerDiscovery.discoverPeers { name, ip ->
-            if (name.isNullOrBlank() || ip.isBlank()) {
+            if (name.isNullOrBlank() || ip.isBlank() || name == Build.MODEL) {
                 Log.w("PeerDiscovery", "Received empty device name or IP")
                 return@discoverPeers
             }
