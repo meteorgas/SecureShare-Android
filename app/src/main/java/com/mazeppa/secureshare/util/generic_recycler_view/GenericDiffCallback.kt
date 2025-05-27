@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.utils.generic_recycler_view
+package com.mazeppa.secureshare.util.generic_recycler_view
 
 import android.annotation.SuppressLint
 import androidx.recyclerview.widget.DiffUtil

@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.common.extension
+package com.mazeppa.secureshare.util.extension
 
 import android.util.DisplayMetrics
 import android.util.TypedValue

@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.common.extension
+package com.mazeppa.secureshare.util.extension
 
 import android.app.Activity
 import android.content.Context

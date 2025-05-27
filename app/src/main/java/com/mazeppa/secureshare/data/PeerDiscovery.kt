@@ -1,6 +1,6 @@
 package com.mazeppa.secureshare.data
 
-import com.mazeppa.secureshare.utils.constants.DiscoveryConfig
+import com.mazeppa.secureshare.util.constant.DiscoveryConfig
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress

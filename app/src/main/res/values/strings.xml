@@ -7,4 +7,7 @@
     <string name="text_ip_address">Ip Address</string>
     <string name="text_send">Send</string>
     <string name="text_receive">Receive</string>
+    <string name="text_selection">Selection</string>
+    <string name="text_devices">Devices</string>
+    <string name="text_add_file">Add File</string>
 </resources>

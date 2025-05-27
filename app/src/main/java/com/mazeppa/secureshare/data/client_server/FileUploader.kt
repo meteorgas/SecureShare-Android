@@ -1,6 +1,5 @@
 package com.mazeppa.secureshare.data.client_server
 
-import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
@@ -23,7 +22,7 @@ object FileUploader {
         callback: (Boolean, String) -> Unit
     ) {
         val contentResolver = context.contentResolver
-        val fileName = getFileName(uri, contentResolver)
+        val fileName = getFileName(context, uri)
         val fileBytes = contentResolver.openInputStream(uri)?.readBytes()
 
         if (fileBytes == null) {
@@ -57,14 +56,15 @@ object FileUploader {
                 Log.d("Uploader", "Upload response body: $bodyText")
 
                 val success = response.isSuccessful
-                val msg = if (success) "Upload successful!" else "Upload failed: ${response.message}"
+                val msg =
+                    if (success) "Upload successful!" else "Upload failed: ${response.message}"
                 callback(success, msg)
             }
         })
     }
 
-    fun getFileName(uri: Uri, contentResolver: ContentResolver): String {
-        val cursor = contentResolver.query(uri, null, null, null, null)
+    fun getFileName(context: Context, uri: Uri): String {
+        val cursor = context.contentResolver.query(uri, null, null, null, null)
         return cursor?.use {
             val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             it.moveToFirst()

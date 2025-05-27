@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Primary Google-style blue -->
-    <color name="colorPrimary">#4285F4</color>           <!-- Google Blue -->
+    <color name="colorPrimary">#245199</color>           <!-- Google Blue -->
     <color name="colorPrimaryVariant">#3367D6</color>
     <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorPrimaryAlpha10">#0D245199</color>
 
     <color name="colorWhiteTone1">#FCFCFF</color>
 

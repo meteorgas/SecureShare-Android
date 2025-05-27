@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.common.base.interfaces
+package com.mazeppa.secureshare.util.base.interfaces
 
 import android.graphics.drawable.Drawable
 

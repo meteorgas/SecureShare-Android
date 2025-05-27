@@ -4,20 +4,22 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp">
+    android:layout_marginBottom="4dp"
+    app:cardCornerRadius="10dp"
+    app:cardBackgroundColor="@color/colorPrimaryAlpha10"
+    app:cardElevation="0dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="6dp">
 
         <ImageView
             android:id="@+id/imageViewFileIcon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="26dp"
+            android:layout_height="26dp"
             android:importantForAccessibility="no"
             android:src="@drawable/ic_file" />
 
@@ -35,7 +37,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:textColor="@android:color/black"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 tools:text="Filename.ext" />
 
             <TextView
@@ -43,7 +45,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@android:color/darker_gray"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 tools:text="123 KB" />
         </LinearLayout>
 
@@ -53,7 +55,7 @@
             android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:importantForAccessibility="no"
-            android:src="@drawable/ic_trash"
-            app:tint="@color/colorOnSurface" />
+            android:src="@drawable/ic_delete"
+            app:tint="@android:color/black" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

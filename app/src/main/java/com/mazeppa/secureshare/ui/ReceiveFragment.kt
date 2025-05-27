@@ -9,14 +9,14 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.secureshare.common.constant.BASE_URL
+import com.mazeppa.secureshare.util.constant.BASE_URL
 import com.mazeppa.secureshare.data.client_server.FileDownloader
 import com.mazeppa.secureshare.data.client_server.FileFetcher
 import com.mazeppa.secureshare.data.client_server.SharedFile
 import com.mazeppa.secureshare.data.lan.FileReceiver
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
 import com.mazeppa.secureshare.databinding.ListReceivedItemBinding
-import com.mazeppa.secureshare.utils.generic_recycler_view.RecyclerListAdapter
+import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

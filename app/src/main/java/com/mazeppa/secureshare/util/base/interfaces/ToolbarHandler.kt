@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.common.base.interfaces
+package com.mazeppa.secureshare.util.base.interfaces
 
 import androidx.appcompat.widget.Toolbar
 //import cr.app.mia.utils.enums.ToolbarItem

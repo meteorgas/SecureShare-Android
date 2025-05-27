@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.common.base
+package com.mazeppa.secureshare.util.base
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle

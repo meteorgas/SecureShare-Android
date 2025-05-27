@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.common.base
+package com.mazeppa.secureshare.util.base
 
 import android.annotation.SuppressLint
 import android.graphics.Color

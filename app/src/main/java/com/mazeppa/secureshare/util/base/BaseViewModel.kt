@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.common.base
+package com.mazeppa.secureshare.util.base
 
 import android.os.Handler
 import android.os.Looper

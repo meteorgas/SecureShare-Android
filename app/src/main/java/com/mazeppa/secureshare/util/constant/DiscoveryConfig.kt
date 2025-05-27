@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.utils.constants
+package com.mazeppa.secureshare.util.constant
 
 object DiscoveryConfig {
     const val BROADCAST_PORT = 9876
