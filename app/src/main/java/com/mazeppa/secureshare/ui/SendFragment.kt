@@ -15,6 +15,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
@@ -130,6 +131,8 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         return binding.root
     }
 
+    private lateinit var waitingDialog: AlertDialog
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
@@ -174,15 +177,35 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                 .post(requestBody)
                 .build()
 
+            requireActivity().runOnUiThread {
+                waitingDialog = AlertDialog.Builder(requireContext())
+                    .setTitle("Waiting for Receiver")
+                    .setMessage("Waiting for the receiver to accept the file...")
+                    .setCancelable(false)
+                    .create()
+                waitingDialog.show()
+            }
+
             OkHttpClient().newCall(request).enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
                     Log.e("Invitation", "Failed to send invite: ${e.message}")
+                    requireActivity().runOnUiThread {
+                        if (::waitingDialog.isInitialized) waitingDialog.dismiss()
+                        Toast.makeText(requireContext(), "Failed to send invite", Toast.LENGTH_SHORT).show()
+                    }
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     if (response.isSuccessful) {
                         Log.d("Invitation", "Invite accepted. Proceed to send file.")
-                        // Now call your fileSender.sendFile(...)
+                        requireActivity().runOnUiThread {
+                            if (::waitingDialog.isInitialized) waitingDialog.dismiss()
+                            Toast.makeText(
+                                requireContext(),
+                                "Invite accepted. Proceed to send file.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                         lifecycleScope.launch {
                             selectedFileUris.forEach { uri ->
                                 Log.i(TAG, "Sending file: ${getFileName(requireContext(), uri)} to $ipAddress")
@@ -192,6 +215,14 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                         }
                     } else {
                         Log.e("Invitation", "Invite rejected or failed: ${response.code}")
+                        requireActivity().runOnUiThread {
+                            if (::waitingDialog.isInitialized) waitingDialog.dismiss()
+                            Toast.makeText(
+                                requireContext(),
+                                "Invite rejected or failed",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             })
