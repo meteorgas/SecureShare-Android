@@ -25,8 +25,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding.bottomNavigationViewMain.setupWithNavController(navController)
-        val rtcManager = WebRtcManager(applicationContext)
-        rtcManager.initialize()
+        WebRtcManager.initialize(context = this)
     }
 
     override val onInflate: (LayoutInflater) -> ActivityMainBinding

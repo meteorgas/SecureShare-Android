@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import org.webrtc.DataChannel
 import org.webrtc.PeerConnection
+import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 
 class SenderSession(
@@ -12,10 +13,39 @@ class SenderSession(
     private val selfId: String,
     private val signalingClient: SignalingClient
 ) {
-
-    private val webRtcManager = WebRtcManager.initialize(context)
     private var peerConnection: PeerConnection? = null
     private var dataChannel: DataChannel? = null
+
+    fun startWebRtcConnection(senderId: String, receiverId: String) {
+        val signalingClient = WebSocketSignalingClient("ws://10.200.13.65:5151", senderId)
+
+        val peerConnection = WebRtcManager.createPeerConnection { candidate ->
+            signalingClient.sendIceCandidate(receiverId, candidate)
+        }
+
+        signalingClient.onOfferReceived { offerSdp ->
+            val sessionDescription = SessionDescription(SessionDescription.Type.OFFER, offerSdp)
+
+            peerConnection.setRemoteDescription(object : SdpObserver {
+                override fun onSetSuccess() {
+                    WebRtcManager.createAnswer { answerSdp ->
+                        signalingClient.sendAnswer(receiverId, answerSdp)
+                    }
+                }
+
+                override fun onSetFailure(error: String?) {
+                    Log.e("SenderSession", "Failed to set remote offer: $error")
+                }
+
+                override fun onCreateSuccess(p0: SessionDescription?) {}
+                override fun onCreateFailure(p0: String?) {}
+            }, sessionDescription)
+        }
+
+        signalingClient.onIceCandidateReceived { candidate ->
+            peerConnection.addIceCandidate(candidate)
+        }
+    }
 
     fun startSession(pin: String, fileUri: Uri) {
         signalingClient.lookupPin(pin) { success, peerId, error ->
@@ -62,6 +92,12 @@ class SenderSession(
 
                 override fun onMessage(buffer: DataChannel.Buffer?) {}
             })
+        }
+    }
+
+    private fun listenForIceCandidates() {
+        signalingClient.onIceCandidateReceived { candidate ->
+            peerConnection?.addIceCandidate(candidate)
         }
     }
 }

@@ -17,6 +17,7 @@ object WebRtcManager {
     private var peerConnectionFactory: PeerConnectionFactory? = null
     private var peerConnection: PeerConnection? = null
     private var dataChannel: DataChannel? = null
+
     private val executor = Executors.newSingleThreadExecutor()
 
     internal val iceServers = listOf(
@@ -26,13 +27,11 @@ object WebRtcManager {
     fun initialize(context: Context) {
         if (peerConnectionFactory != null) return
 
-        // Step 1: Global WebRTC initialization
         val initializationOptions = PeerConnectionFactory.InitializationOptions.builder(context)
             .setEnableInternalTracer(true)
             .createInitializationOptions()
         PeerConnectionFactory.initialize(initializationOptions)
 
-        // Step 2: Create PeerConnectionFactory
         val options = PeerConnectionFactory.Options()
         peerConnectionFactory = PeerConnectionFactory.builder()
             .setOptions(options)
@@ -40,23 +39,31 @@ object WebRtcManager {
     }
 
     fun createPeerConnection(onIceCandidate: (IceCandidate) -> Unit): PeerConnection {
-        val rtcConfig = PeerConnection.RTCConfiguration(iceServers)
-        rtcConfig.sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+        val config = PeerConnection.RTCConfiguration(iceServers).apply {
+            sdpSemantics = PeerConnection.SdpSemantics.UNIFIED_PLAN
+        }
 
         val factory = peerConnectionFactory ?: throw IllegalStateException("WebRTC not initialized")
-        peerConnection = factory.createPeerConnection(rtcConfig, object : PeerConnection.Observer {
+        peerConnection = factory.createPeerConnection(config, object : PeerConnection.Observer {
             override fun onIceCandidate(candidate: IceCandidate) = onIceCandidate(candidate)
             override fun onDataChannel(dc: DataChannel) {
                 dataChannel = dc
+                Log.d("WebRTC", "DataChannel received")
             }
 
-            override fun onSignalingChange(newState: PeerConnection.SignalingState?) {}
-            override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState?) {}
+            override fun onSignalingChange(newState: PeerConnection.SignalingState) {
+                Log.d("WebRTC", "Signaling changed: $newState")
+            }
+
+            override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState) {
+                Log.d("WebRTC", "ICE connection changed: $newState")
+            }
+
             override fun onIceConnectionReceivingChange(receiving: Boolean) {}
-            override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState?) {}
-            override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate?>?) {}
-            override fun onAddStream(stream: MediaStream?) {}
-            override fun onRemoveStream(stream: MediaStream?) {}
+            override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState) {}
+            override fun onIceCandidatesRemoved(candidates: Array<IceCandidate>) {}
+            override fun onAddStream(stream: MediaStream) {}
+            override fun onRemoveStream(stream: MediaStream) {}
             override fun onRenegotiationNeeded() {}
         }) ?: throw IllegalStateException("Failed to create PeerConnection")
 
@@ -64,7 +71,7 @@ object WebRtcManager {
     }
 
     fun createOffer(onOfferCreated: (SessionDescription) -> Unit) {
-        val pc = peerConnection ?: throw IllegalStateException("PeerConnection is null")
+        val pc = requireNotNull(peerConnection) { "PeerConnection is null" }
         pc.createOffer(object : SdpObserver {
             override fun onCreateSuccess(desc: SessionDescription) {
                 pc.setLocalDescription(object : SdpObserver {
@@ -84,12 +91,52 @@ object WebRtcManager {
         }, MediaConstraints())
     }
 
+    fun createAnswer(onAnswerCreated: (SessionDescription) -> Unit) {
+        val pc = requireNotNull(peerConnection) { "PeerConnection is null" }
+        pc.createAnswer(object : SdpObserver {
+            override fun onCreateSuccess(desc: SessionDescription) {
+                pc.setLocalDescription(object : SdpObserver {
+                    override fun onSetSuccess() = onAnswerCreated(desc)
+                    override fun onSetFailure(error: String?) {}
+                    override fun onCreateSuccess(p0: SessionDescription?) {}
+                    override fun onCreateFailure(p0: String?) {}
+                }, desc)
+            }
+
+            override fun onCreateFailure(error: String?) {
+                Log.e("WebRTC", "Answer creation failed: $error")
+            }
+
+            override fun onSetSuccess() {}
+            override fun onSetFailure(p0: String?) {}
+        }, MediaConstraints())
+    }
+
+    fun setRemoteDescription(desc: SessionDescription, onSet: () -> Unit = {}) {
+        val pc = requireNotNull(peerConnection) { "PeerConnection is null" }
+        pc.setRemoteDescription(object : SdpObserver {
+            override fun onSetSuccess() = onSet()
+            override fun onSetFailure(error: String?) {}
+            override fun onCreateSuccess(p0: SessionDescription?) {}
+            override fun onCreateFailure(p0: String?) {}
+        }, desc)
+    }
+
     fun createDataChannel(): DataChannel {
-        val pc = peerConnection ?: throw IllegalStateException("PeerConnection not initialized")
+        val pc = requireNotNull(peerConnection) { "PeerConnection not initialized" }
         val init = DataChannel.Init()
         dataChannel = pc.createDataChannel("fileChannel", init)
         return dataChannel!!
     }
 
-    fun getFactory() = peerConnectionFactory
+    fun dispose() {
+        dataChannel?.close()
+        dataChannel = null
+        peerConnection?.close()
+        peerConnection = null
+        peerConnectionFactory?.dispose()
+        peerConnectionFactory = null
+    }
+
+    fun getFactory(): PeerConnectionFactory? = peerConnectionFactory
 }

@@ -2,13 +2,13 @@ package com.mazeppa.secureshare.data.p2p
 
 import android.content.Context
 import android.util.Log
-import com.mazeppa.secureshare.data.p2p.WebRtcManager
 import org.webrtc.DataChannel
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
 import org.webrtc.PeerConnectionFactory
+import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import java.nio.ByteBuffer
 
@@ -67,34 +67,57 @@ class ReceiverSession(
     private fun listenForOffer() {
         signalingClient.onOfferReceived { sdp ->
             val offer = SessionDescription(SessionDescription.Type.OFFER, sdp)
-            peerConnection.setRemoteDescription(
-                object : SdpObserverAdapter() {
-                    override fun onSetSuccess() {
-                        createAndSendAnswer()
-                    }
-                },
-                offer
-            )
-        }
+            peerConnection.setRemoteDescription(object : SdpObserver {
+                override fun onSetSuccess() {
+                    Log.d("ReceiverSession", "Remote offer set. Creating answer...")
 
+                    peerConnection.createAnswer(object : SdpObserver {
+                        override fun onCreateSuccess(answer: SessionDescription) {
+                            peerConnection.setLocalDescription(object : SdpObserver {
+                                override fun onSetSuccess() {
+                                    Log.d("ReceiverSession", "Local answer set.")
+                                    signalingClient.sendAnswer(peerId, answer)
+                                }
+
+                                override fun onSetFailure(p0: String?) {
+                                    Log.e("ReceiverSession", "Failed to set local answer: $p0")
+                                }
+
+                                override fun onCreateSuccess(p0: SessionDescription?) {}
+                                override fun onCreateFailure(p0: String?) {}
+                            }, answer)
+                        }
+
+                        override fun onCreateFailure(error: String?) {
+                            Log.e("ReceiverSession", "Failed to create answer: $error")
+                        }
+
+                        override fun onSetSuccess() {}
+                        override fun onSetFailure(p0: String?) {}
+                    }, MediaConstraints())
+                }
+
+                override fun onSetFailure(error: String?) {
+                    Log.e("ReceiverSession", "Failed to set remote offer: $error")
+                }
+
+                override fun onCreateSuccess(p0: SessionDescription?) {}
+                override fun onCreateFailure(p0: String?) {}
+            }, offer)
+        }
+    }
+
+    private fun listenForIceCandidates() {
         signalingClient.onIceCandidateReceived { candidate ->
             peerConnection.addIceCandidate(candidate)
         }
     }
 
-    private fun createAndSendAnswer() {
-        peerConnection.createAnswer(object : SdpObserverAdapter() {
-            override fun onCreateSuccess(desc: SessionDescription?) {
-                peerConnection.setLocalDescription(object : SdpObserverAdapter() {
-                    override fun onSetSuccess() {
-                        desc?.let { signalingClient.sendAnswer(peerId, it) }
-                    }
-                }, desc)
-            }
-        }, MediaConstraints())
-    }
-
-    fun connectAsReceiver(pin: String, signalingClient: SignalingClient, webRtcManager: WebRtcManager) {
+    fun connectAsReceiver(
+        pin: String,
+        signalingClient: SignalingClient,
+        webRtcManager: WebRtcManager
+    ) {
         signalingClient.lookupPin(pin) { success, peerId, errorMessage ->
             if (!success || peerId == null) {
                 Log.e("ReceiverSession", "PIN lookup failed: $errorMessage")

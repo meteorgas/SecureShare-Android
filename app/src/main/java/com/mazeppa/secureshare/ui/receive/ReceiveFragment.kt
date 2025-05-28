@@ -20,14 +20,19 @@ import com.mazeppa.secureshare.data.lan.receiver.FileDownloadHandler
 import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
 import com.mazeppa.secureshare.data.p2p.PinPairingService.acceptInvite
 import com.mazeppa.secureshare.data.p2p.PinPairingService.lookupPin
+import com.mazeppa.secureshare.data.p2p.SdpObserverAdapter
+import com.mazeppa.secureshare.data.p2p.WebRtcManager
+import com.mazeppa.secureshare.data.p2p.WebSocketSignalingClient
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
 import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
 import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.Utility.getLocalIpAddress
 import com.mazeppa.secureshare.util.Utility.getPublicIpAddress
+import com.mazeppa.secureshare.util.constant.BASE_URL
 import com.mazeppa.secureshare.util.extension.showToast
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.launch
+import org.webrtc.SessionDescription
 import java.util.UUID
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
@@ -133,19 +138,20 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                             val receiverId = "${Build.MODEL}_${UUID.randomUUID()}"
 
                             lookupPin(pin) { found, senderPeerId, error ->
-                                if (found) {
-                                    Log.i("PIN_PAIR", "Sender peerId: $senderPeerId")
-                                    acceptInvite(pin, receiverId) { accepted, senderIdOrError ->
-                                        if (accepted) {
-                                            Log.i(
-                                                "PIN_PAIR",
-                                                "Invitation accepted. SenderId: $senderIdOrError"
-                                            )
-                                            // TODO: Start file receiving logic
-                                        } else {
-                                            showToast("Accept failed: $senderIdOrError")
-                                        }
-                                    }
+                                if (found && senderPeerId != null) {
+                                    Log.i(TAG, "Sender peerId: $senderPeerId")
+                                    startWebRtcConnection(senderPeerId, receiverId)
+
+//                                    acceptInvite(pin, receiverId) { accepted, senderIdOrError ->
+//                                        if (accepted && senderIdOrError != null) {
+//                                            Log.i(TAG, "Invitation accepted. SenderId: $senderIdOrError")
+//                                            val senderId = senderIdOrError
+//                                            startWebRtcConnection(senderId, receiverId)
+//                                        } else {
+//                                            showToast("Accept failed: $senderIdOrError")
+//                                        }
+//                                    }
+
                                 } else {
                                     showToast("PIN not found: $error")
                                 }
@@ -157,6 +163,35 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                     .setNegativeButton("Cancel", null)
                     .show()
             }
+        }
+    }
+
+    private fun startWebRtcConnection(senderId: String, receiverId: String) {
+        val signalingClient = WebSocketSignalingClient("ws://10.200.13.65:5151", receiverId)
+
+        val peerConnection = WebRtcManager.createPeerConnection { candidate ->
+            signalingClient.sendIceCandidate(senderId, candidate)
+        }
+
+        signalingClient.onAnswerReceived { sdp ->
+            Log.i(TAG, "Answer received from sender")
+            peerConnection.setRemoteDescription(
+                object : SdpObserverAdapter() {
+                    override fun onSetSuccess() {
+                        Log.i(TAG, "Remote description set successfully")
+                    }
+                },
+                SessionDescription(SessionDescription.Type.ANSWER, sdp)
+            )
+        }
+
+        signalingClient.onIceCandidateReceived { candidate ->
+            Log.i(TAG, "ICE candidate received")
+            peerConnection.addIceCandidate(candidate)
+        }
+
+        WebRtcManager.createOffer { offer ->
+            signalingClient.sendOffer(senderId, offer)
         }
     }
 
