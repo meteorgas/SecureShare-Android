@@ -1,16 +1,22 @@
 package com.mazeppa.secureshare.data.lan.receiver
 
 import android.os.Environment
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.DataInputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.net.ServerSocket
 import java.net.SocketException
 
 class FileReceiver(private val port: Int = 5051) {
+
+    companion object {
+        private const val TAG = "FileReceiver"
+    }
 
     interface FileReceiverListener {
         fun onFileMetadataReceived(name: String, size: Long, mimeType: String)
@@ -52,7 +58,7 @@ class FileReceiver(private val port: Int = 5051) {
 
                     val downloads =
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                    val outputFile = File(downloads, fileName)
+                    val outputFile = generateUniqueFile(downloads, fileName)
                     val outputStream = FileOutputStream(outputFile)
 
                     val buffer = ByteArray(4096)
@@ -76,6 +82,7 @@ class FileReceiver(private val port: Int = 5051) {
                     listener.onStatusUpdate("Waiting for next sender...")
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Error in file receiver: ${e.message}")
                 if (isRunning) listener.onError(e.message ?: "Unknown error")
             } finally {
                 serverSocket?.close()
@@ -85,9 +92,35 @@ class FileReceiver(private val port: Int = 5051) {
         }
     }
 
+    fun generateUniqueFile(dir: File, baseName: String): File {
+        val nameWithoutExt = baseName.substringBeforeLast(".")
+        val extension = baseName.substringAfterLast(".", "")
+        var file = File(dir, baseName)
+        var counter = 1
+
+        while (!isFileWritable(file)) {
+            val newName = "$nameWithoutExt($counter).$extension"
+            file = File(dir, newName)
+            counter++
+        }
+
+        return file
+    }
+
+    private fun isFileWritable(file: File): Boolean {
+        return try {
+            val stream = FileOutputStream(file)
+            stream.close()
+            file.delete() // Cleanup test file
+            true
+        } catch (e: IOException) {
+            false
+        }
+    }
+
     fun stop() {
         isRunning = false
-        serverSocket?.close()  // this will unblock .accept()
+        serverSocket?.close()
         serverSocket = null
     }
 }
