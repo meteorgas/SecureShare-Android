@@ -22,6 +22,7 @@ import com.mazeppa.secureshare.data.lan.invitation.InvitationSender
 import com.mazeppa.secureshare.data.lan.model.DeviceInfo
 import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.sender.FileSender
+import com.mazeppa.secureshare.data.p2p.PinPairingService
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
 import com.mazeppa.secureshare.util.FileManager
 import com.mazeppa.secureshare.util.FileManager.formatSize
@@ -29,6 +30,7 @@ import com.mazeppa.secureshare.util.FileManager.getFileSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class SendFragment : Fragment(), FileSender.FileSenderListener {
 
@@ -148,6 +150,28 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                 .setNegativeButton("Cancel", null)
                 .show()
         }
+
+        buttonRemoteConnection.setOnClickListener {
+            val deviceId = "${Build.MODEL}_${UUID.randomUUID()}"
+
+            PinPairingService.generatePin(deviceId) { success, pin, errorOrPeerId ->
+                requireActivity().runOnUiThread {
+                    if (success) {
+                        val peerId = errorOrPeerId // this is actually peerId
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Your PIN")
+                            .setMessage("Share this PIN with the receiver:\n\n$pin")
+                            .setPositiveButton("OK", null)
+                            .show()
+
+                        // TODO: Save deviceId and peerId for signaling
+                        Log.i("PIN_PAIR", "Your peerId: $peerId")
+                    } else {
+                        Toast.makeText(requireContext(), "Error: $errorOrPeerId", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     private fun discoverDevices() {
@@ -234,12 +258,6 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         val visible = outgoingFiles.isEmpty()
         viewBackground.visibility = if (visible) View.VISIBLE else View.GONE
         textViewAddFile.visibility = if (visible) View.VISIBLE else View.GONE
-    }
-
-    private fun showToast(message: String) {
-        requireActivity().runOnUiThread {
-            Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-        }
     }
 
     override fun onStatusUpdate(message: String) {}

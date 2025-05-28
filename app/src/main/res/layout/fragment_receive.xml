@@ -12,6 +12,7 @@
         android:id="@+id/textViewSelection"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
         android:fontFamily="@font/roboto_medium"
         android:text="@string/text_incoming_files"
         android:textColor="@android:color/black"
@@ -28,8 +29,22 @@
         android:padding="8dp"
         android:src="@drawable/ic_info"
         app:iconTint="@android:color/black"
+        android:layout_marginEnd="8dp"
         app:layout_constraintBottom_toBottomOf="@id/textViewSelection"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/buttonRemoteConnection"
+        app:layout_constraintTop_toTopOf="@id/textViewSelection" />
+
+    <ImageButton
+        android:id="@+id/buttonRemoteConnection"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@android:color/transparent"
+        android:importantForAccessibility="no"
+        android:padding="8dp"
+        android:src="@drawable/ic_p2p"
+        app:iconTint="@android:color/black"
+        app:layout_constraintBottom_toBottomOf="@id/textViewSelection"
+        app:layout_constraintEnd_toEndOf="@id/cardViewSelection"
         app:layout_constraintTop_toTopOf="@id/textViewSelection" />
 
     <com.google.android.material.card.MaterialCardView

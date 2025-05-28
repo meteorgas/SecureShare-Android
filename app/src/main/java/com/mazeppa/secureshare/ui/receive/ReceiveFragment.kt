@@ -1,11 +1,14 @@
 package com.mazeppa.secureshare.ui.receive
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -15,13 +18,17 @@ import com.mazeppa.secureshare.data.lan.model.IncomingFile
 import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.receiver.FileDownloadHandler
 import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
+import com.mazeppa.secureshare.data.p2p.PinPairingService.acceptInvite
+import com.mazeppa.secureshare.data.p2p.PinPairingService.lookupPin
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
 import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
 import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.Utility.getLocalIpAddress
 import com.mazeppa.secureshare.util.Utility.getPublicIpAddress
+import com.mazeppa.secureshare.util.extension.showToast
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
@@ -104,6 +111,51 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                         .setPositiveButton("OK", null)
                         .show()
                 }
+            }
+
+            buttonRemoteConnection.setOnClickListener {
+                val editText = EditText(requireContext()).apply {
+                    hint = "Enter PIN"
+                    inputType = InputType.TYPE_CLASS_NUMBER
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                }
+
+                AlertDialog.Builder(requireContext())
+                    .setTitle("PIN")
+                    .setMessage("Enter the sender's PIN:")
+                    .setView(editText)
+                    .setPositiveButton("Confirm") { _, _ ->
+                        val pin = editText.text.toString().trim()
+                        if (pin.isNotBlank()) {
+                            val receiverId = "${Build.MODEL}_${UUID.randomUUID()}"
+
+                            lookupPin(pin) { found, senderPeerId, error ->
+                                if (found) {
+                                    Log.i("PIN_PAIR", "Sender peerId: $senderPeerId")
+                                    acceptInvite(pin, receiverId) { accepted, senderIdOrError ->
+                                        if (accepted) {
+                                            Log.i(
+                                                "PIN_PAIR",
+                                                "Invitation accepted. SenderId: $senderIdOrError"
+                                            )
+                                            // TODO: Start file receiving logic
+                                        } else {
+                                            showToast("Accept failed: $senderIdOrError")
+                                        }
+                                    }
+                                } else {
+                                    showToast("PIN not found: $error")
+                                }
+                            }
+                        } else {
+                            showToast("Invalid PIN")
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
         }
     }

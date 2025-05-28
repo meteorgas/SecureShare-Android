@@ -8,6 +8,7 @@ import android.util.TypedValue
 import android.widget.Toast
 import androidx.annotation.AnimRes
 import androidx.annotation.StringRes
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavDirections
@@ -16,6 +17,12 @@ import androidx.navigation.fragment.findNavController
 import com.mazeppa.secureshare.R
 import java.io.Serializable
 import kotlin.reflect.KClass
+
+fun Fragment.showToast(message: String) {
+    requireActivity().runOnUiThread {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
+}
 
 fun <A : Activity> Fragment.startActivity(
     cls: KClass<A>,
