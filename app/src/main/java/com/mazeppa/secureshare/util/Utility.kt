@@ -1,8 +1,12 @@
 package com.mazeppa.secureshare.util
 
 import android.util.Log
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
 import java.net.Inet4Address
 import java.net.NetworkInterface
+import java.net.URL
 
 object Utility {
     fun formatTime(seconds: Double): String {
@@ -26,5 +30,16 @@ object Utility {
             Log.e("Network", "Failed to get local IP: ${ex.message}")
         }
         return null
+    }
+
+    suspend fun getPublicIpAddress(): String = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val connection = URL("https://api.ipify.org").openConnection() as HttpURLConnection
+            connection.connectTimeout = 3000
+            connection.readTimeout = 3000
+            connection.inputStream.bufferedReader().use { it.readText() }
+        } catch (e: Exception) {
+            "Unavailable"
+        }
     }
 }

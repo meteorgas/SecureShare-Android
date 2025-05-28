@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
@@ -17,6 +18,8 @@ import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
 import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
 import com.mazeppa.secureshare.util.FileManager.formatSize
+import com.mazeppa.secureshare.util.Utility.getLocalIpAddress
+import com.mazeppa.secureshare.util.Utility.getPublicIpAddress
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.launch
 
@@ -90,6 +93,18 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     @SuppressLint("SetTextI18n")
     private fun setListeners() {
         binding.apply {
+            buttonInfoIpAddress.setOnClickListener {
+                lifecycleScope.launch {
+                    val localIp = getLocalIpAddress()
+                    val publicIp = getPublicIpAddress()
+
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("Device IP Addresses")
+                        .setMessage("Local IP: $localIp\nPublic IP: $publicIp")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
         }
     }
 

@@ -19,6 +19,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <ImageButton
+        android:id="@+id/buttonInfoIpAddress"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="@android:color/transparent"
+        android:importantForAccessibility="no"
+        android:padding="8dp"
+        android:src="@drawable/ic_info"
+        app:iconTint="@android:color/black"
+        app:layout_constraintBottom_toBottomOf="@id/textViewSelection"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/textViewSelection" />
+
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardViewSelection"
         android:layout_width="match_parent"

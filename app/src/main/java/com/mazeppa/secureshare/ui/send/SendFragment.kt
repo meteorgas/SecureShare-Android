@@ -5,10 +5,12 @@ import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -116,6 +118,36 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         }
 
         buttonRefreshDevices.setOnClickListener { discoverDevices() }
+
+        buttonAddIpAddress.setOnClickListener {
+            val editText = EditText(requireContext()).apply {
+                hint = "Enter IP address"
+                inputType = InputType.TYPE_CLASS_TEXT
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            AlertDialog.Builder(requireContext())
+                .setTitle("Manual Target")
+                .setMessage("Enter the receiver's IP address:")
+                .setView(editText)
+                .setPositiveButton("Send") { _, _ ->
+                    val ip = editText.text.toString().trim()
+                    if (ip.isNotBlank()) {
+                        if (outgoingFiles.isNotEmpty()) {
+                            sendInvitation(ip)
+                        } else {
+                            Toast.makeText(requireContext(), "No files selected", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(requireContext(), "Invalid IP address", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
     }
 
     private fun discoverDevices() {
