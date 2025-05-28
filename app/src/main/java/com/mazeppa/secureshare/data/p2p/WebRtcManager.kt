@@ -12,25 +12,27 @@ import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import java.util.concurrent.Executors
 
-class WebRtcManager(private val context: Context) {
+object WebRtcManager {
 
     private var peerConnectionFactory: PeerConnectionFactory? = null
     private var peerConnection: PeerConnection? = null
     private var dataChannel: DataChannel? = null
     private val executor = Executors.newSingleThreadExecutor()
 
-    private val iceServers = listOf(
+    internal val iceServers = listOf(
         PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer()
     )
 
-    fun initialize() {
+    fun initialize(context: Context) {
         if (peerConnectionFactory != null) return
 
+        // Step 1: Global WebRTC initialization
         val initializationOptions = PeerConnectionFactory.InitializationOptions.builder(context)
             .setEnableInternalTracer(true)
             .createInitializationOptions()
         PeerConnectionFactory.initialize(initializationOptions)
 
+        // Step 2: Create PeerConnectionFactory
         val options = PeerConnectionFactory.Options()
         peerConnectionFactory = PeerConnectionFactory.builder()
             .setOptions(options)
@@ -89,7 +91,5 @@ class WebRtcManager(private val context: Context) {
         return dataChannel!!
     }
 
-    fun getFactory(): PeerConnectionFactory {
-        return peerConnectionFactory ?: throw IllegalStateException("WebRTC not initialized")
-    }
+    fun getFactory() = peerConnectionFactory
 }
