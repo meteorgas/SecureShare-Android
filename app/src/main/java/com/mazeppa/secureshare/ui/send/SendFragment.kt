@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.ui
+package com.mazeppa.secureshare.ui.send
 
 import android.annotation.SuppressLint
 import android.net.Uri
@@ -13,25 +13,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.secureshare.data.SelectedFile
 import com.mazeppa.secureshare.data.client_server.FileUploader.getFileName
-import com.mazeppa.secureshare.data.lan.PeerDiscovery
+import com.mazeppa.secureshare.data.lan.invitation.InvitationSender
 import com.mazeppa.secureshare.data.lan.model.DeviceInfo
+import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.sender.FileSender
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
-import com.mazeppa.secureshare.util.formatSize
-import com.mazeppa.secureshare.util.getFileSize
+import com.mazeppa.secureshare.util.FileManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
-import okio.IOException
-import org.json.JSONObject
 
 class SendFragment : Fragment(), FileSender.FileSenderListener {
 
@@ -40,9 +30,9 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     }
 
     private lateinit var fileSender: FileSender
-    private val selectedFileUris = mutableListOf<Uri>()
-    private lateinit var binding: FragmentSendBinding
     private lateinit var waitingDialog: AlertDialog
+    private lateinit var binding: FragmentSendBinding
+    private val selectedFileUris = mutableListOf<Uri>()
 
     private var onRemoveFile: ((Uri) -> Unit)? = null
     private var onSendFilesClicked: ((String) -> Unit)? = null
@@ -133,13 +123,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
     private fun refreshFileList() {
         checkAddFileButtonVisibility()
-        val updatedList = selectedFileUris.map { uri ->
-            SelectedFile(
-                name = getFileName(requireContext(), uri),
-                size = formatSize(getFileSize(requireContext(), uri)),
-                uri = uri
-            )
-        }
+        val updatedList = FileManager.mapUrisToFiles(requireContext(), selectedFileUris)
         selectedFilesAdapter.submitList(updatedList)
     }
 
@@ -150,62 +134,43 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
             return
         }
 
-        val targetPort = 5050
-        val fileName =
-            selectedFileUris.firstOrNull()?.let { getFileName(requireContext(), it) } ?: return
-
-        val json = JSONObject().apply {
-            put("fileName", fileName)
-        }
-
-        val requestBody = json.toString().toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
-            .url("http://$ipAddress:$targetPort/invite")
-            .post(requestBody)
-            .build()
+        val fileName = selectedFileUris.firstOrNull()?.let {
+            getFileName(requireContext(), it)
+        } ?: return
 
         showWaitingDialog()
 
-        OkHttpClient().newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                Log.e("Invitation", "Failed to send invite: ${e.message}")
-                requireActivity().runOnUiThread {
-                    dismissWaitingDialog()
-                    Toast.makeText(requireContext(), "Failed to send invite", Toast.LENGTH_SHORT)
-                        .show()
-                }
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                requireActivity().runOnUiThread { dismissWaitingDialog() }
-                if (response.isSuccessful) {
-                    lifecycleScope.launch {
-                        Log.d("Invitation", "Invite accepted. Proceed to send file.")
-                        Toast.makeText(
-                            requireContext(),
-                            "Invite accepted. Proceed to send file.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-
-                        selectedFileUris.forEach { uri ->
-                            Log.i(
-                                TAG,
-                                "Sending file: ${getFileName(requireContext(), uri)} to $ipAddress"
-                            )
-                            fileSender.sendFile(uri, ipAddress, 5051, this@SendFragment)
-                            delay(1000)
-                        }
+        InvitationSender.send(
+            ip = ipAddress,
+            fileName = fileName,
+            onAccepted = {
+                dismissWaitingDialog()
+                Toast.makeText(
+                    requireContext(),
+                    "Invite accepted. Sending files...",
+                    Toast.LENGTH_SHORT
+                ).show()
+                lifecycleScope.launch {
+                    selectedFileUris.forEach { uri ->
+                        Log.i(
+                            TAG,
+                            "Sending file: ${getFileName(requireContext(), uri)} to $ipAddress"
+                        )
+                        fileSender.sendFile(uri, ipAddress, 5051, this@SendFragment)
+                        delay(1000)
                     }
-                } else {
-                    Log.e("Invitation", "Invite rejected or failed: ${response.code}")
-                    Toast.makeText(
-                        requireContext(),
-                        "Invite rejected or failed",
-                        Toast.LENGTH_SHORT
-                    ).show()
                 }
+            },
+            onRejected = {
+                dismissWaitingDialog()
+                Toast.makeText(requireContext(), "Invite rejected by receiver", Toast.LENGTH_SHORT)
+                    .show()
+            },
+            onError = { message ->
+                dismissWaitingDialog()
+                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
             }
-        })
+        )
     }
 
     private fun showWaitingDialog() {

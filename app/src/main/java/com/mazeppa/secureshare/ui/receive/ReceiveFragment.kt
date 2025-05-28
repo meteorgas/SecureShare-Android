@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.ui
+package com.mazeppa.secureshare.ui.receive
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -9,16 +9,14 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
-import com.mazeppa.secureshare.data.SelectedFile
+import com.mazeppa.secureshare.data.lan.invitation.InvitationServer
+import com.mazeppa.secureshare.data.lan.model.IncomingFile
+import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.receiver.FileDownloadHandler
 import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
-import com.mazeppa.secureshare.data.lan.model.IncomingFile
-import com.mazeppa.secureshare.data.lan.InvitationServer
-import com.mazeppa.secureshare.data.lan.PeerDiscovery
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
-import com.mazeppa.secureshare.databinding.ListItemFileBinding
 import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
-import com.mazeppa.secureshare.util.formatSize
+import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.launch
 
@@ -60,7 +58,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
         PeerDiscovery.startPeerDiscoveryReceiver()
 
-        val server = InvitationServer.ensureRunning()
+        val server = InvitationServer.Companion.ensureRunning()
         server.setContextProvider { requireContext() }
 
         binding.recyclerViewFiles.adapter = incomingFilesAdapter
@@ -86,7 +84,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         super.onDestroyView()
         Log.i(TAG, "onDestroyView called, stopping file receiver and peer discovery.")
         PeerDiscovery.stopPeerDiscoveryReceiver()
-        InvitationServer.stopServer()
+        InvitationServer.Companion.stopServer()
     }
 
     @SuppressLint("SetTextI18n")

@@ -3,7 +3,7 @@ package com.mazeppa.secureshare.data.lan.sender
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import com.mazeppa.secureshare.util.getMimeType
+import com.mazeppa.secureshare.util.FileManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -35,7 +35,7 @@ class FileSender(private val context: Context) {
                 val metadataJson = JSONObject().apply {
                     put("fileName", fileName)
                     put("fileSize", fileSize)
-                    put("mimeType", getMimeType(context, uri))
+                    put("mimeType", FileManager.getMimeType(context, uri))
                 }.toString()
 
                 outputStream.writeUTF(metadataJson)

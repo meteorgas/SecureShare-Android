@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.ui
+package com.mazeppa.secureshare.ui.send
 
 import com.mazeppa.secureshare.data.lan.model.DeviceInfo
 import com.mazeppa.secureshare.databinding.ListItemDeviceBinding

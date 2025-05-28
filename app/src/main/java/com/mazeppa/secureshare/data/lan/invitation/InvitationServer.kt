@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.data.lan
+package com.mazeppa.secureshare.data.lan.invitation
 
 import android.app.AlertDialog
 import android.content.Context

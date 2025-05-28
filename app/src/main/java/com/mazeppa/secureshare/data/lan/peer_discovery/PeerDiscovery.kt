@@ -1,16 +1,8 @@
-package com.mazeppa.secureshare.data.lan
+package com.mazeppa.secureshare.data.lan.peer_discovery
 
 import android.os.Build
 import android.util.Log
 import com.mazeppa.secureshare.util.constant.DiscoveryConfig
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.Response
-import okio.IOException
 import org.json.JSONObject
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -138,27 +130,5 @@ object PeerDiscovery {
                 Log.e(TAG, "Discovery error: ${e.message}", e)
             }
         }.start()
-    }
-
-    fun sendInvitation(ip: String, fileName: String, onResult: (Boolean) -> Unit) {
-        val client = OkHttpClient()
-        val json = JSONObject().apply {
-            put("fileName", fileName)
-        }
-
-        val request = Request.Builder()
-            .url("http://$ip:5050/invite") // you'll implement this endpoint on receiver
-            .post(json.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                onResult(false)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                onResult(response.isSuccessful)
-            }
-        })
     }
 }

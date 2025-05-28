@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.ui
+package com.mazeppa.secureshare.ui.send
 
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
