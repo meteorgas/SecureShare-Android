@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.viewbinding.ViewBinding
 
-class RecyclerListAdapter<VB : ViewBinding, D : Any>(
+open class RecyclerListAdapter<VB : ViewBinding, D : Any>(
     private val onInflate: (LayoutInflater, ViewGroup?, Boolean) -> VB,
     private val onBind: (VB, D, Int) -> Unit
 ) : ListAdapter<D, RecyclerViewHolder<VB, D>>(GenericDiffCallback<D>()) {

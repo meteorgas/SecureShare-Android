@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.data.lan
+package com.mazeppa.secureshare.data.lan.receiver
 
 import android.content.Context
 import android.util.Log

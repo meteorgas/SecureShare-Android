@@ -1,4 +1,4 @@
-package com.mazeppa.secureshare.data.lan
+package com.mazeppa.secureshare.data.lan.receiver
 
 import android.os.Environment
 import kotlinx.coroutines.Dispatchers
@@ -8,7 +8,6 @@ import java.io.DataInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.net.ServerSocket
-import java.net.Socket
 import java.net.SocketException
 
 class FileReceiver(private val port: Int = 5051) {

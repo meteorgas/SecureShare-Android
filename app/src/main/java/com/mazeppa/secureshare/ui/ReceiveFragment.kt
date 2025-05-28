@@ -9,15 +9,17 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.mazeppa.secureshare.R
-import com.mazeppa.secureshare.data.lan.FileDownloadHandler
-import com.mazeppa.secureshare.data.lan.FileReceiver
-import com.mazeppa.secureshare.data.lan.IncomingFile
+import com.mazeppa.secureshare.data.SelectedFile
+import com.mazeppa.secureshare.data.lan.receiver.FileDownloadHandler
+import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
+import com.mazeppa.secureshare.data.lan.model.IncomingFile
 import com.mazeppa.secureshare.data.lan.InvitationServer
 import com.mazeppa.secureshare.data.lan.PeerDiscovery
-import com.mazeppa.secureshare.data.lan.RecyclerListAdapterForIncomingFiles
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
+import com.mazeppa.secureshare.databinding.ListItemFileBinding
 import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
 import com.mazeppa.secureshare.util.formatSize
+import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.launch
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
@@ -30,14 +32,14 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     private lateinit var binding: FragmentReceiveBinding
     private var onDownloadFile: ((String, String) -> Unit)? = null
     private val incomingFilesAdapter by lazy {
-        RecyclerListAdapterForIncomingFiles(
+        RecyclerListAdapter<ListItemIncomingFileBinding, IncomingFile>(
             onInflate = ListItemIncomingFileBinding::inflate,
-            onBind = { binding, selectedFile, pos ->
+            onBind = { binding, incomingFile, pos ->
                 binding.apply {
                     imageViewFileIcon.setImageResource(R.drawable.ic_file)
-                    textViewFileName.text = selectedFile.name
-                    textViewFileSize.text = selectedFile.size
-                    linearProgressIndicator.progress = selectedFile.progress
+                    textViewFileName.text = incomingFile.name
+                    textViewFileSize.text = incomingFile.size
+                    linearProgressIndicator.progress = incomingFile.progress
                 }
             }
         )
@@ -121,8 +123,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     }
 
     override fun onFileReceived(path: String) {
-        Log.i(TAG, "✅ File received: $path")
-        // -> UI: Mark as complete / show download option
+        Log.i(TAG, "File received: $path")
     }
 
     private fun updateStatus(text: String) {
