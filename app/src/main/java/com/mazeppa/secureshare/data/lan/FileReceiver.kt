@@ -3,6 +3,7 @@ package com.mazeppa.secureshare.data.lan
 import android.os.Environment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.io.DataInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -13,8 +14,10 @@ import java.net.SocketException
 class FileReceiver(private val port: Int = 5051) {
 
     interface FileReceiverListener {
-        fun onStatusUpdate(message: String)
+        fun onFileMetadataReceived(name: String, size: Long, mimeType: String)
+        fun onFileProgressUpdate(name: String, progress: Int)
         fun onFileReceived(path: String)
+        fun onStatusUpdate(message: String)
         fun onError(message: String)
     }
 
@@ -40,8 +43,13 @@ class FileReceiver(private val port: Int = 5051) {
 
                     val inputStream = DataInputStream(socket.getInputStream())
 
-                    val fileName = inputStream.readUTF()
-                    val fileSize = inputStream.readLong()
+                    val metadataJson = inputStream.readUTF()
+                    val metadata = JSONObject(metadataJson)
+                    val fileName = metadata.getString("fileName")
+                    val fileSize = metadata.getLong("fileSize")
+                    val mimeType = metadata.optString("mimeType", "application/octet-stream")
+
+                    listener.onFileMetadataReceived(fileName, fileSize, mimeType)
 
                     val downloads =
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
@@ -56,6 +64,9 @@ class FileReceiver(private val port: Int = 5051) {
                         if (bytesRead == -1) break
                         outputStream.write(buffer, 0, bytesRead)
                         totalBytesRead += bytesRead
+
+                        val progress = ((totalBytesRead * 100) / fileSize).toInt()
+                        listener.onFileProgressUpdate(fileName, progress)
                     }
 
                     outputStream.close()

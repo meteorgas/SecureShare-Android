@@ -53,3 +53,7 @@ fun getLocalIpAddress(): String? {
     }
     return null
 }
+
+fun getMimeType(context: Context, uri: Uri): String? {
+    return context.contentResolver.getType(uri)
+}

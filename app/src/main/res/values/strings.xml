@@ -10,4 +10,5 @@
     <string name="text_selection">Selection</string>
     <string name="text_devices">Devices</string>
     <string name="text_add_file">Add File</string>
+    <string name="text_incoming_files">Incoming Files</string>
 </resources>

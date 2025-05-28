@@ -8,14 +8,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.secureshare.data.client_server.SharedFile
+import com.mazeppa.secureshare.R
 import com.mazeppa.secureshare.data.lan.FileDownloadHandler
 import com.mazeppa.secureshare.data.lan.FileReceiver
+import com.mazeppa.secureshare.data.lan.IncomingFile
 import com.mazeppa.secureshare.data.lan.InvitationServer
 import com.mazeppa.secureshare.data.lan.PeerDiscovery
+import com.mazeppa.secureshare.data.lan.RecyclerListAdapterForIncomingFiles
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
-import com.mazeppa.secureshare.databinding.ListReceivedItemBinding
-import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
+import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
+import com.mazeppa.secureshare.util.formatSize
 import kotlinx.coroutines.launch
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
@@ -27,15 +29,15 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     private lateinit var fileReceiver: FileReceiver
     private lateinit var binding: FragmentReceiveBinding
     private var onDownloadFile: ((String, String) -> Unit)? = null
-    private val adapter by lazy {
-        RecyclerListAdapter<ListReceivedItemBinding, SharedFile>(
-            onInflate = ListReceivedItemBinding::inflate,
-            onBind = { binding, sharedFile, pos ->
+    private val incomingFilesAdapter by lazy {
+        RecyclerListAdapterForIncomingFiles(
+            onInflate = ListItemIncomingFileBinding::inflate,
+            onBind = { binding, selectedFile, pos ->
                 binding.apply {
-                    textViewFileName.text = sharedFile.name
-                    buttonDownloadFile.setOnClickListener {
-                        onDownloadFile?.invoke(sharedFile.url, sharedFile.name)
-                    }
+                    imageViewFileIcon.setImageResource(R.drawable.ic_file)
+                    textViewFileName.text = selectedFile.name
+                    textViewFileSize.text = selectedFile.size
+                    linearProgressIndicator.progress = selectedFile.progress
                 }
             }
         )
@@ -59,7 +61,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         val server = InvitationServer.ensureRunning()
         server.setContextProvider { requireContext() }
 
-        binding.recyclerView.adapter = adapter
+        binding.recyclerViewFiles.adapter = incomingFilesAdapter
 
         onDownloadFile = FileDownloadHandler.createDownloadCallback(requireContext()) { status ->
             binding.textViewStatusText.text = status
@@ -95,12 +97,32 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         updateStatus(message)
     }
 
-    override fun onFileReceived(path: String) {
-        updateStatus("File received: $path")
-    }
-
     override fun onError(message: String) {
         updateStatus("Error: $message")
+    }
+
+    override fun onFileMetadataReceived(name: String, size: Long, mimeType: String) {
+        Log.i(TAG, "Incoming file: $name ($size bytes) [$mimeType]")
+        lifecycleScope.launch {
+            incomingFilesAdapter.submitList(
+                incomingFilesAdapter.currentList + IncomingFile(name, formatSize(size), mimeType)
+            )
+        }
+    }
+
+    override fun onFileProgressUpdate(name: String, progress: Int) {
+        Log.d(TAG, "$name progress: $progress%")
+        val updatedList = incomingFilesAdapter.currentList.map {
+            if (it.name == name) it.copy(progress = progress) else it
+        }
+        lifecycleScope.launch {
+            incomingFilesAdapter.submitList(updatedList)
+        }
+    }
+
+    override fun onFileReceived(path: String) {
+        Log.i(TAG, "✅ File received: $path")
+        // -> UI: Mark as complete / show download option
     }
 
     private fun updateStatus(text: String) {
