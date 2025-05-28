@@ -1,5 +1,7 @@
 package com.mazeppa.secureshare.data.p2p
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import okhttp3.Call
 import okhttp3.Callback
@@ -106,5 +108,55 @@ object PinPairingService {
                 }
             }
         })
+    }
+
+    fun sendOfferToServer(pin: String, sdp: String) {
+        val json = JSONObject().apply {
+            put("pin", pin)
+            put("sdp", sdp)
+        }
+
+        val request = Request.Builder()
+            .url("$BASE_URL/offer")
+            .post(json.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+
+        OkHttpClient().newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {}
+            override fun onResponse(call: Call, response: Response) {}
+        })
+    }
+
+    fun pollForAnswer(pin: String, onAnswerReceived: (String) -> Unit) {
+        val request = Request.Builder()
+            .url("$BASE_URL/answer/$pin")
+            .get()
+            .build()
+
+        val client = OkHttpClient()
+
+        val handler = Handler(Looper.getMainLooper())
+
+        lateinit var runnable: Runnable
+
+        runnable = Runnable {
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("PinPairing", "Request failed: ${e.message}")
+                    handler.postDelayed(runnable, 2000) // retry again
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (response.isSuccessful) {
+                        val answer = response.body?.string() ?: ""
+                        onAnswerReceived(answer)
+                    } else {
+                        handler.postDelayed(runnable, 2000) // keep polling
+                    }
+                }
+            })
+        }
+
+        handler.post(runnable)
     }
 }

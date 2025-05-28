@@ -8,12 +8,11 @@ import androidx.navigation.ui.setupWithNavController
 import com.mazeppa.secureshare.R
 import com.mazeppa.secureshare.util.base.BaseActivity
 import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
+import com.mazeppa.secureshare.data.p2p.WebRtcManager
 import com.mazeppa.secureshare.databinding.ActivityMainBinding
 import org.json.JSONObject
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {
-
-    private lateinit var fileReceiver: FileReceiver
 
     private val navHostFragment: NavHostFragment by lazy {
         supportFragmentManager.findFragmentById(R.id.fragmentContainerView) as NavHostFragment
@@ -25,13 +24,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val json = """{"title": "My App", "version": 3}"""
-        val jsonObject = JSONObject(json)
-        val title = jsonObject.getString("title")  // Parser lets you use "My App"
-
-        fileReceiver = FileReceiver()
         binding.bottomNavigationViewMain.setupWithNavController(navController)
+        val rtcManager = WebRtcManager(applicationContext)
+        rtcManager.initialize()
     }
 
     override val onInflate: (LayoutInflater) -> ActivityMainBinding

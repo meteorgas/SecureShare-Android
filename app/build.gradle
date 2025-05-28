@@ -52,6 +52,7 @@ dependencies {
     implementation libs.material.v1110
     implementation libs.okhttp
     implementation libs.nanohttpd
+    implementation libs.stream.webrtc.android
     implementation (libs.socket.io.client) {
         exclude group: 'org.json', module: 'json'
     }
