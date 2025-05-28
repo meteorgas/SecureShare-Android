@@ -66,6 +66,18 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            fileReceiver.start(this@ReceiveFragment)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        fileReceiver.stop()
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         Log.i(TAG, "onDestroyView called, stopping file receiver and peer discovery.")
@@ -76,26 +88,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     @SuppressLint("SetTextI18n")
     private fun setListeners() {
         binding.apply {
-            buttonStart.setOnClickListener {
-                lifecycleScope.launch {
-//                    FileFetcher.fetchFileList(BASE_URL) { files, error ->
-//                        requireActivity().runOnUiThread {
-//                            if (files != null) {
-//                                // Pass to your RecyclerView adapter
-//                                Log.i(TAG, "Files fetched: ${files}")
-//                                adapter.submitList(files)
-//                            } else {
-//                                Toast.makeText(
-//                                    requireContext(),
-//                                    error ?: "Unknown error",
-//                                    Toast.LENGTH_SHORT
-//                                ).show()
-//                            }
-//                        }
-//                    }
-                    fileReceiver.start(this@ReceiveFragment)
-                }
-            }
         }
     }
 
