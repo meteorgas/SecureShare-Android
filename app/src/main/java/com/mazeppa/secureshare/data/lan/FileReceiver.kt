@@ -9,7 +9,7 @@ import java.io.FileOutputStream
 import java.net.ServerSocket
 import java.net.Socket
 
-class FileReceiver(private val port: Int = 5050) {
+class FileReceiver(private val port: Int = 5051) {
 
     interface FileReceiverListener {
         fun onStatusUpdate(message: String)

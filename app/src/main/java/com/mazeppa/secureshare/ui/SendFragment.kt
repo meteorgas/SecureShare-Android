@@ -209,7 +209,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                         lifecycleScope.launch {
                             selectedFileUris.forEach { uri ->
                                 Log.i(TAG, "Sending file: ${getFileName(requireContext(), uri)} to $ipAddress")
-                                fileSender.sendFile(uri, ipAddress, port, this@SendFragment)
+                                fileSender.sendFile(uri, ipAddress, 5051, this@SendFragment)
                                 delay(1000)
                             }
                         }

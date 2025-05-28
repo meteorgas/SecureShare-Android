@@ -1,32 +1,22 @@
 package com.mazeppa.secureshare.ui
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.mazeppa.secureshare.data.lan.PeerDiscovery
-import com.mazeppa.secureshare.data.client_server.FileDownloader
 import com.mazeppa.secureshare.data.client_server.SharedFile
+import com.mazeppa.secureshare.data.lan.FileDownloadHandler
 import com.mazeppa.secureshare.data.lan.FileReceiver
 import com.mazeppa.secureshare.data.lan.InvitationServer
+import com.mazeppa.secureshare.data.lan.PeerDiscovery
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
 import com.mazeppa.secureshare.databinding.ListReceivedItemBinding
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.Response
-import org.json.JSONObject
-import java.io.IOException
-import java.lang.reflect.Method
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
@@ -43,7 +33,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             onBind = { binding, sharedFile, pos ->
                 binding.apply {
                     textViewFileName.text = sharedFile.name
-//                    textViewFileSize.text = selectedFile.size
                     buttonDownloadFile.setOnClickListener {
                         onDownloadFile?.invoke(sharedFile.url, sharedFile.name)
                     }
@@ -51,8 +40,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             }
         )
     }
-
-    private var invitationServer: InvitationServer? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -69,26 +56,13 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
         PeerDiscovery.startPeerDiscoveryReceiver()
 
-        if (invitationServer == null) {
-            invitationServer = InvitationServer(requireContext())
-            try {
-                invitationServer?.start()
-                Log.d("ReceiveFragment", "InvitationServer started.")
-            } catch (e: IOException) {
-                Log.e("ReceiveFragment", "Failed to start server: ${e.message}", e)
-            }
-        } else {
-            Log.d("ReceiveFragment", "InvitationServer already running.")
-        }
+        val server = InvitationServer.ensureRunning()
+        server.setContextProvider { requireContext() }
 
         binding.recyclerView.adapter = adapter
-        onDownloadFile = { url, name ->
-            Log.i(TAG, "Downloading file from URL: $url")
-            lifecycleScope.launch {
-                FileDownloader.downloadFile(requireContext(), url, name) { success, message ->
-                    Log.i(TAG, "Download result: $success, message: $message")
-                }
-            }
+
+        onDownloadFile = FileDownloadHandler.createDownloadCallback(requireContext()) { status ->
+            binding.textViewStatusText.text = status
         }
     }
 
@@ -96,9 +70,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         super.onDestroyView()
         Log.i(TAG, "onDestroyView called, stopping file receiver and peer discovery.")
         PeerDiscovery.stopPeerDiscoveryReceiver()
-        invitationServer?.stop()
-        invitationServer = null
-        Log.d("ReceiveFragment", "InvitationServer stopped.")
+        InvitationServer.stopServer()
     }
 
     @SuppressLint("SetTextI18n")
@@ -128,26 +100,20 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     }
 
     override fun onStatusUpdate(message: String) {
-        lifecycleScope.launch {
-            withContext(Dispatchers.Main) {
-                binding.textViewStatusText.text = message
-            }
-        }
+        updateStatus(message)
     }
 
     override fun onFileReceived(path: String) {
-        lifecycleScope.launch {
-            withContext(Dispatchers.Main) {
-                binding.textViewStatusText.text = "File received: $path"
-            }
-        }
+        updateStatus("File received: $path")
     }
 
     override fun onError(message: String) {
+        updateStatus("Error: $message")
+    }
+
+    private fun updateStatus(text: String) {
         lifecycleScope.launch {
-            withContext(Dispatchers.Main) {
-                binding.textViewStatusText.text = "Error: $message"
-            }
+            binding.textViewStatusText.text = text
         }
     }
 }
