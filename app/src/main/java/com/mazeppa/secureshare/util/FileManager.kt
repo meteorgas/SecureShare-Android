@@ -4,13 +4,13 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import com.mazeppa.secureshare.data.SelectedFile
+import com.mazeppa.secureshare.data.OutgoingFile
 
 object FileManager {
 
-    fun mapUrisToFiles(context: Context, uris: List<Uri>): List<SelectedFile> {
+    fun mapUrisToFiles(context: Context, uris: List<Uri>): List<OutgoingFile> {
         return uris.map {
-            SelectedFile(
+            OutgoingFile(
                 name = getFileName(context, it),
                 size = formatSize(getFileSize(context, it)),
                 uri = it
@@ -18,7 +18,7 @@ object FileManager {
         }
     }
 
-    fun removeUri(context: Context, uri: Uri, list: MutableList<Uri>): List<SelectedFile> {
+    fun removeUri(context: Context, uri: Uri, list: MutableList<Uri>): List<OutgoingFile> {
         list.remove(uri)
         return mapUrisToFiles(context, list)
     }

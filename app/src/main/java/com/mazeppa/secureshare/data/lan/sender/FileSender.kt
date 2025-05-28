@@ -14,7 +14,7 @@ class FileSender(private val context: Context) {
 
     interface FileSenderListener {
         fun onStatusUpdate(message: String)
-        fun onProgressUpdate(progress: Int)
+        fun onProgressUpdate(fileName: String, progress: Int)
         fun onComplete()
         fun onError(error: String)
         fun onTransferStatsUpdate(speedBytesPerSec: Double, remainingSec: Double)
@@ -54,7 +54,7 @@ class FileSender(private val context: Context) {
 
                     // Calculate progress
                     val progress = ((totalBytesSent * 100) / fileSize).toInt()
-                    listener.onProgressUpdate(progress)
+                    listener.onProgressUpdate(fileName, progress)
 
                     // Calculate speed and estimated time
                     val elapsedSeconds = (System.currentTimeMillis() - startTime) / 1000.0

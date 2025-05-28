@@ -34,7 +34,7 @@
             android:layout_margin="4dp"
             android:layoutAnimation="@anim/layout_animation"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-            tools:listitem="@layout/list_item_file" />
+            tools:listitem="@layout/list_item_outgoing_file" />
     </com.google.android.material.card.MaterialCardView>
 
     <TextView

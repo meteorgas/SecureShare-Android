@@ -37,7 +37,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                     imageViewFileIcon.setImageResource(R.drawable.ic_file)
                     textViewFileName.text = incomingFile.name
                     textViewFileSize.text = incomingFile.size
-                    linearProgressIndicator.progress = incomingFile.progress
+                    progressBar.progress = incomingFile.progress
                 }
             }
         )

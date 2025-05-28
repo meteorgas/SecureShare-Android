@@ -1,5 +1,6 @@
 package com.mazeppa.secureshare.ui.send
 
+import android.R.attr.name
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Build
@@ -13,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.mazeppa.secureshare.data.OutgoingFile
 import com.mazeppa.secureshare.data.client_server.FileUploader.getFileName
 import com.mazeppa.secureshare.data.lan.invitation.InvitationSender
 import com.mazeppa.secureshare.data.lan.model.DeviceInfo
@@ -20,6 +22,9 @@ import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.sender.FileSender
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
 import com.mazeppa.secureshare.util.FileManager
+import com.mazeppa.secureshare.util.FileManager.formatSize
+import com.mazeppa.secureshare.util.FileManager.getFileSize
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -32,21 +37,21 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private lateinit var fileSender: FileSender
     private lateinit var waitingDialog: AlertDialog
     private lateinit var binding: FragmentSendBinding
-    private val selectedFileUris = mutableListOf<Uri>()
+    private val outgoingFiles = mutableListOf<OutgoingFile>()
 
     private var onRemoveFile: ((Uri) -> Unit)? = null
     private var onSendFilesClicked: ((String) -> Unit)? = null
 
-    private val selectedFilesAdapter by lazy {
-        FileListAdapter { uri ->
-            selectedFileUris.remove(uri)
+    private val outgoingFilesAdapter by lazy {
+        FileListAdapter { outgoingFile ->
+            outgoingFiles.remove(outgoingFile)
             refreshFileList()
         }
     }
 
     private val devicesAdapter by lazy {
         DeviceListAdapter { ip ->
-            if (selectedFileUris.isNotEmpty()) sendInvitation(ip)
+            if (outgoingFiles.isNotEmpty()) sendInvitation(ip)
             else Toast.makeText(requireContext(), "No files selected to send", Toast.LENGTH_SHORT)
                 .show()
         }
@@ -65,7 +70,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
-        binding.recyclerViewFiles.adapter = selectedFilesAdapter
+        binding.recyclerViewFiles.adapter = outgoingFilesAdapter
         binding.recyclerViewDevices.adapter = devicesAdapter
         discoverDevices()
 
@@ -80,7 +85,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
     private fun checkAddFileButtonVisibility() {
         binding.apply {
-            if (selectedFileUris.isEmpty()) {
+            if (outgoingFiles.isEmpty()) {
                 viewBackground.visibility = View.VISIBLE
                 textViewAddFile.visibility = View.VISIBLE
             } else {
@@ -94,8 +99,15 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private fun setListeners() = binding.apply {
         val filePickerLauncher =
             registerForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-                selectedFileUris.clear()
-                selectedFileUris.addAll(uris)
+                val selected = uris.map {
+                    OutgoingFile(
+                        name = getFileName(requireContext(), it),
+                        size = formatSize(getFileSize(requireContext(), it)),
+                        uri = it
+                    )
+                }
+                outgoingFiles.clear()
+                outgoingFiles.addAll(selected)
                 refreshFileList()
             }
 
@@ -117,25 +129,25 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     }
 
     private fun handleRemoveFile(uri: Uri) {
-        selectedFileUris.remove(uri)
+        outgoingFiles.removeIf { it.uri == uri }
         refreshFileList()
     }
 
     private fun refreshFileList() {
         checkAddFileButtonVisibility()
-        val updatedList = FileManager.mapUrisToFiles(requireContext(), selectedFileUris)
-        selectedFilesAdapter.submitList(updatedList)
+        val updatedList = FileManager.mapUrisToFiles(requireContext(), outgoingFiles.map { it.uri })
+        outgoingFilesAdapter.submitList(updatedList)
     }
 
     private fun sendInvitation(ipAddress: String) {
-        if (ipAddress.isBlank() || selectedFileUris.isEmpty()) {
+        if (ipAddress.isBlank() || outgoingFiles.isEmpty()) {
             Toast.makeText(requireContext(), "IP address or files missing", Toast.LENGTH_SHORT)
                 .show()
             return
         }
 
-        val fileName = selectedFileUris.firstOrNull()?.let {
-            getFileName(requireContext(), it)
+        val fileName = outgoingFiles.firstOrNull()?.let {
+            getFileName(requireContext(), it.uri)
         } ?: return
 
         showWaitingDialog()
@@ -151,12 +163,12 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                     Toast.LENGTH_SHORT
                 ).show()
                 lifecycleScope.launch {
-                    selectedFileUris.forEach { uri ->
+                    outgoingFiles.forEach { file ->
                         Log.i(
                             TAG,
-                            "Sending file: ${getFileName(requireContext(), uri)} to $ipAddress"
+                            "Sending file: ${getFileName(requireContext(), file.uri)} to $ipAddress"
                         )
-                        fileSender.sendFile(uri, ipAddress, 5051, this@SendFragment)
+                        fileSender.sendFile(file.uri, ipAddress, 5051, this@SendFragment)
                         delay(1000)
                     }
                 }
@@ -187,7 +199,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     }
 
     private fun toggleAddFileVisibility() = binding.apply {
-        val visible = selectedFileUris.isEmpty()
+        val visible = outgoingFiles.isEmpty()
         viewBackground.visibility = if (visible) View.VISIBLE else View.GONE
         textViewAddFile.visibility = if (visible) View.VISIBLE else View.GONE
     }
@@ -199,8 +211,27 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     }
 
     override fun onStatusUpdate(message: String) {}
-    override fun onProgressUpdate(progress: Int) {}
+
+    override fun onProgressUpdate(fileName: String, progress: Int) {
+        Log.i(TAG, "Progress update: $progress%")
+        lifecycleScope.launch(Dispatchers.Main) {
+            val updatedList = outgoingFilesAdapter.currentList.map {
+                if (it.name == fileName) it.copy(progress = progress) else it
+            }
+            outgoingFilesAdapter.submitList(updatedList)
+        }
+    }
+
     override fun onTransferStatsUpdate(speedBytesPerSec: Double, remainingSec: Double) {}
-    override fun onComplete() {}
+    override fun onComplete() {
+        lifecycleScope.launch(Dispatchers.Main) {
+            val index = outgoingFiles.indexOfFirst { it.progress < 100 }
+            if (index != -1) {
+                outgoingFiles[index].progress = 100
+                outgoingFilesAdapter.notifyItemChanged(index)
+            }
+        }
+    }
+
     override fun onError(message: String) {}
 }

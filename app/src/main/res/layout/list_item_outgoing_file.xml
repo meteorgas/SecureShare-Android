@@ -28,13 +28,15 @@
 
         <TextView
             android:id="@+id/textViewFileName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
+            android:layout_marginEnd="4dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="@android:color/black"
             android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@+id/buttonRemoveFile"
             app:layout_constraintStart_toEndOf="@id/imageViewFileIcon"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Filename.ext" />
@@ -48,6 +50,18 @@
             app:layout_constraintStart_toStartOf="@id/textViewFileName"
             app:layout_constraintTop_toBottomOf="@id/textViewFileName"
             tools:text="123 KB" />
+
+        <ImageButton
+            android:id="@+id/buttonRemoveFile"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:importantForAccessibility="no"
+            android:src="@drawable/ic_delete"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:tint="@android:color/black" />
 
         <ProgressBar
             android:id="@+id/progressBar"
