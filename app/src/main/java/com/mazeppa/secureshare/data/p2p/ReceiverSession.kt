@@ -7,7 +7,6 @@ import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
-import org.webrtc.PeerConnectionFactory
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
 import java.nio.ByteBuffer
@@ -20,67 +19,69 @@ class ReceiverSession(
     private val onDataReceived: (ByteBuffer) -> Unit
 ) {
     private lateinit var peerConnection: PeerConnection
-    private lateinit var factory: PeerConnectionFactory
-    private val iceCandidates = mutableListOf<IceCandidate>()
 
     fun start() {
         WebRtcManager.initialize(context)
-        factory = WebRtcManager.getFactory() ?: return
 
-        peerConnection = factory.createPeerConnection(
-            WebRtcManager.iceServers,
-            object : PeerConnection.Observer {
-                override fun onIceCandidate(candidate: IceCandidate) {
-                    signalingClient.sendIceCandidate(peerId, candidate)
-                }
+        peerConnection = WebRtcManager.createPeerConnection { candidate ->
+            signalingClient.sendIceCandidate(peerId, candidate)
+        }
 
-                override fun onDataChannel(channel: DataChannel) {
-                    channel.registerObserver(object : DataChannel.Observer {
-                        override fun onMessage(buffer: DataChannel.Buffer) {
-                            onDataReceived(buffer.data)
-                        }
-
-                        override fun onStateChange() {
-                            if (channel.state() == DataChannel.State.OPEN) {
-                                onConnected()
-                            }
-                        }
-
-                        override fun onBufferedAmountChange(p0: Long) {}
-                    })
-                }
-
-                override fun onSignalingChange(p0: PeerConnection.SignalingState?) {}
-                override fun onIceConnectionChange(p0: PeerConnection.IceConnectionState?) {}
-                override fun onIceConnectionReceivingChange(p0: Boolean) {}
-                override fun onIceGatheringChange(p0: PeerConnection.IceGatheringState?) {}
-                override fun onIceCandidatesRemoved(p0: Array<out IceCandidate?>?) {}
-                override fun onAddStream(p0: MediaStream?) {}
-                override fun onRemoveStream(p0: MediaStream?) {}
-                override fun onRenegotiationNeeded() {}
+        // Register PeerConnection Observer
+        val observer = object : PeerConnection.Observer {
+            override fun onIceCandidate(candidate: IceCandidate) {
+                signalingClient.sendIceCandidate(peerId, candidate)
             }
-        ) ?: return
 
-        listenForOffer()
-    }
+            override fun onDataChannel(channel: DataChannel) {
+                Log.d("ReceiverSession", "DataChannel received.")
+                channel.registerObserver(object : DataChannel.Observer {
+                    override fun onMessage(buffer: DataChannel.Buffer) {
+                        onDataReceived(buffer.data)
+                    }
 
-    private fun listenForOffer() {
+                    override fun onStateChange() {
+                        if (channel.state() == DataChannel.State.OPEN) {
+                            onConnected()
+                        }
+                    }
+
+                    override fun onBufferedAmountChange(p0: Long) {}
+                })
+            }
+
+            override fun onSignalingChange(newState: PeerConnection.SignalingState?) {}
+            override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState?) {}
+            override fun onIceConnectionReceivingChange(receiving: Boolean) {}
+            override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState?) {}
+            override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) {}
+            override fun onAddStream(stream: MediaStream?) {}
+            override fun onRemoveStream(stream: MediaStream?) {}
+            override fun onRenegotiationNeeded() {}
+        }
+
+        // Re-create the peer connection with the proper observer
+        peerConnection.close()
+        peerConnection = WebRtcManager.getFactory()!!.createPeerConnection(
+            WebRtcManager.iceServers,
+            observer
+        ) ?: throw IllegalStateException("Failed to create PeerConnection")
+
+        // Handle offer from sender
         signalingClient.onOfferReceived { sdp ->
             val offer = SessionDescription(SessionDescription.Type.OFFER, sdp)
             peerConnection.setRemoteDescription(object : SdpObserver {
                 override fun onSetSuccess() {
                     Log.d("ReceiverSession", "Remote offer set. Creating answer...")
-
                     peerConnection.createAnswer(object : SdpObserver {
                         override fun onCreateSuccess(answer: SessionDescription) {
                             peerConnection.setLocalDescription(object : SdpObserver {
                                 override fun onSetSuccess() {
-                                    Log.d("ReceiverSession", "Local answer set.")
                                     signalingClient.sendAnswer(peerId, answer)
                                 }
 
-                                override fun onSetFailure(p0: String?) {
-                                    Log.e("ReceiverSession", "Failed to set local answer: $p0")
+                                override fun onSetFailure(error: String?) {
+                                    Log.e("ReceiverSession", "Failed to set local answer: $error")
                                 }
 
                                 override fun onCreateSuccess(p0: SessionDescription?) {}
@@ -105,46 +106,14 @@ class ReceiverSession(
                 override fun onCreateFailure(p0: String?) {}
             }, offer)
         }
-    }
 
-    private fun listenForIceCandidates() {
+        // Handle ICE candidates from sender
         signalingClient.onIceCandidateReceived { candidate ->
             peerConnection.addIceCandidate(candidate)
         }
     }
 
-    fun connectAsReceiver(
-        pin: String,
-        signalingClient: SignalingClient,
-        webRtcManager: WebRtcManager
-    ) {
-        signalingClient.lookupPin(pin) { success, peerId, errorMessage ->
-            if (!success || peerId == null) {
-                Log.e("ReceiverSession", "PIN lookup failed: $errorMessage")
-                return@lookupPin
-            }
-
-            val peerConnection = webRtcManager.createPeerConnection { candidate ->
-                signalingClient.sendIceCandidate(peerId, candidate)
-            }
-
-            signalingClient.onOfferReceived { sdp ->
-                val offer = SessionDescription(SessionDescription.Type.OFFER, sdp)
-                peerConnection.setRemoteDescription(object : SdpObserverAdapter() {
-                    override fun onSetSuccess() {
-                        peerConnection.createAnswer(object : SdpObserverAdapter() {
-                            override fun onCreateSuccess(answer: SessionDescription?) {
-                                peerConnection.setLocalDescription(SdpObserverAdapter(), answer)
-                                answer?.let { signalingClient.sendAnswer(peerId, it) }
-                            }
-                        }, MediaConstraints())
-                    }
-                }, offer)
-            }
-
-            signalingClient.onIceCandidateReceived { candidate ->
-                peerConnection.addIceCandidate(candidate)
-            }
-        }
+    fun dispose() {
+        peerConnection.close()
     }
 }
