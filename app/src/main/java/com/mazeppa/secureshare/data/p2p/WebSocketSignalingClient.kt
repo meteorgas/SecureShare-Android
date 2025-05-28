@@ -1,14 +1,20 @@
 package com.mazeppa.secureshare.data.p2p
 
 import android.util.Log
+import com.mazeppa.secureshare.util.constant.BASE_URL
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class WebSocketSignalingClient(
@@ -86,6 +92,31 @@ class WebSocketSignalingClient(
             put("candidate", candidate.sdp)
         }
         webSocket.send(json.toString())
+    }
+
+    override fun lookupPin(pin: String, callback: (Boolean, String?, String?) -> Unit) {
+        val request = Request.Builder()
+            .url("$BASE_URL/lookup-pin")
+            .post(JSONObject().apply {
+                put("pin", pin)
+            }.toString().toRequestBody("application/json".toMediaType()))
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback(false, null, e.message)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                if (response.isSuccessful) {
+                    val body = response.body?.string()
+                    val peerId = JSONObject(body ?: "").optString("peerId", null)
+                    callback(true, peerId, null)
+                } else {
+                    callback(false, null, "Invalid or expired PIN")
+                }
+            }
+        })
     }
 
     override fun onOfferReceived(callback: (String) -> Unit) {

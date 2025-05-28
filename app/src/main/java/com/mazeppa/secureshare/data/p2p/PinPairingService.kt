@@ -12,6 +12,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okio.IOException
 import org.json.JSONObject
+import org.webrtc.SessionDescription
 
 object PinPairingService {
 
@@ -158,5 +159,25 @@ object PinPairingService {
         }
 
         handler.post(runnable)
+    }
+
+    fun connectAsSender(peerId: String, signalingClient: SignalingClient, webRtcManager: WebRtcManager) {
+        val peerConnection = webRtcManager.createPeerConnection { candidate ->
+            signalingClient.sendIceCandidate(peerId, candidate)
+        }
+
+        webRtcManager.createOffer { offer ->
+            peerConnection.setLocalDescription(SdpObserverAdapter(), offer)
+            signalingClient.sendOffer(peerId, offer)
+        }
+
+        signalingClient.onAnswerReceived { sdp ->
+            val answer = SessionDescription(SessionDescription.Type.ANSWER, sdp)
+            peerConnection.setRemoteDescription(SdpObserverAdapter(), answer)
+        }
+
+        signalingClient.onIceCandidateReceived { candidate ->
+            peerConnection.addIceCandidate(candidate)
+        }
     }
 }

@@ -10,4 +10,5 @@ interface SignalingClient {
     fun onOfferReceived(callback: (String) -> Unit)
     fun onAnswerReceived(callback: (String) -> Unit)
     fun onIceCandidateReceived(callback: (IceCandidate) -> Unit)
+    fun lookupPin(pin: String, callback: (success: Boolean, peerId: String?, error: String?) -> Unit)
 }

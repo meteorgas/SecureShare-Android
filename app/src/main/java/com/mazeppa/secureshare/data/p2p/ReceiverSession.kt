@@ -1,6 +1,7 @@
 package com.mazeppa.secureshare.data.p2p
 
 import android.content.Context
+import android.util.Log
 import com.mazeppa.secureshare.data.p2p.WebRtcManager
 import org.webrtc.DataChannel
 import org.webrtc.IceCandidate
@@ -91,5 +92,36 @@ class ReceiverSession(
                 }, desc)
             }
         }, MediaConstraints())
+    }
+
+    fun connectAsReceiver(pin: String, signalingClient: SignalingClient, webRtcManager: WebRtcManager) {
+        signalingClient.lookupPin(pin) { success, peerId, errorMessage ->
+            if (!success || peerId == null) {
+                Log.e("ReceiverSession", "PIN lookup failed: $errorMessage")
+                return@lookupPin
+            }
+
+            val peerConnection = webRtcManager.createPeerConnection { candidate ->
+                signalingClient.sendIceCandidate(peerId, candidate)
+            }
+
+            signalingClient.onOfferReceived { sdp ->
+                val offer = SessionDescription(SessionDescription.Type.OFFER, sdp)
+                peerConnection.setRemoteDescription(object : SdpObserverAdapter() {
+                    override fun onSetSuccess() {
+                        peerConnection.createAnswer(object : SdpObserverAdapter() {
+                            override fun onCreateSuccess(answer: SessionDescription?) {
+                                peerConnection.setLocalDescription(SdpObserverAdapter(), answer)
+                                answer?.let { signalingClient.sendAnswer(peerId, it) }
+                            }
+                        }, MediaConstraints())
+                    }
+                }, offer)
+            }
+
+            signalingClient.onIceCandidateReceived { candidate ->
+                peerConnection.addIceCandidate(candidate)
+            }
+        }
     }
 }
