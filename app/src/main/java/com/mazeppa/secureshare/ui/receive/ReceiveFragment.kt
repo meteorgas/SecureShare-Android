@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -18,8 +19,10 @@ import com.mazeppa.secureshare.data.lan.model.IncomingFile
 import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.receiver.FileDownloadHandler
 import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
+import com.mazeppa.secureshare.data.p2p.PinPairingService
 import com.mazeppa.secureshare.data.p2p.PinPairingService.acceptInvite
 import com.mazeppa.secureshare.data.p2p.PinPairingService.lookupPin
+import com.mazeppa.secureshare.data.p2p.ReceiverSession
 import com.mazeppa.secureshare.data.p2p.SdpObserverAdapter
 import com.mazeppa.secureshare.data.p2p.WebRtcManager
 import com.mazeppa.secureshare.data.p2p.WebSocketSignalingClient
@@ -33,6 +36,9 @@ import com.mazeppa.secureshare.util.extension.showToast
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.launch
 import org.webrtc.SessionDescription
+import java.io.File
+import java.io.FileOutputStream
+import java.nio.ByteBuffer
 import java.util.UUID
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
@@ -40,6 +46,13 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     companion object {
         private const val TAG = "ReceiveFragment"
     }
+
+    private lateinit var signalingClient: WebSocketSignalingClient
+    private var receiverSession: ReceiverSession? = null
+    private val selfId = UUID.randomUUID().toString()
+    private var outputStream: FileOutputStream? = null
+    private lateinit var receivedFile: File
+
 
     private lateinit var fileReceiver: FileReceiver
     private lateinit var binding: FragmentReceiveBinding
@@ -100,6 +113,8 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         Log.i(TAG, "onDestroyView called, stopping file receiver and peer discovery.")
         PeerDiscovery.stopPeerDiscoveryReceiver()
         InvitationServer.Companion.stopServer()
+        receiverSession?.dispose()
+        outputStream?.close()
     }
 
     @SuppressLint("SetTextI18n")
@@ -119,51 +134,105 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             }
 
             buttonRemoteConnection.setOnClickListener {
-                val editText = EditText(requireContext()).apply {
-                    hint = "Enter PIN"
-                    inputType = InputType.TYPE_CLASS_NUMBER
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    )
+                PinPairingService.generatePin(selfId) { success, pin, peerId ->
+                    requireActivity().runOnUiThread {
+                        if (!success || pin.isNullOrEmpty() || peerId.isNullOrEmpty()) {
+                            Toast.makeText(requireContext(), "Failed to generate PIN", Toast.LENGTH_LONG).show()
+                            return@runOnUiThread
+                        }
+                        // Show the PIN to the user
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Share this PIN with sender")
+                            .setMessage("PIN: $pin")
+                            .setPositiveButton("OK", null)
+                            .show()
+
+                        // Start P2P listener
+                        startP2PListener(peerId)
+                    }
                 }
 
-                AlertDialog.Builder(requireContext())
-                    .setTitle("PIN")
-                    .setMessage("Enter the sender's PIN:")
-                    .setView(editText)
-                    .setPositiveButton("Confirm") { _, _ ->
-                        val pin = editText.text.toString().trim()
-                        if (pin.isNotBlank()) {
-                            val receiverId = "${Build.MODEL}_${UUID.randomUUID()}"
-
-                            lookupPin(pin) { found, senderPeerId, error ->
-                                if (found && senderPeerId != null) {
-                                    Log.i(TAG, "Sender peerId: $senderPeerId")
-                                    startWebRtcConnection(senderPeerId, receiverId)
-
-//                                    acceptInvite(pin, receiverId) { accepted, senderIdOrError ->
-//                                        if (accepted && senderIdOrError != null) {
-//                                            Log.i(TAG, "Invitation accepted. SenderId: $senderIdOrError")
-//                                            val senderId = senderIdOrError
-//                                            startWebRtcConnection(senderId, receiverId)
-//                                        } else {
-//                                            showToast("Accept failed: $senderIdOrError")
-//                                        }
-//                                    }
-
-                                } else {
-                                    showToast("PIN not found: $error")
-                                }
-                            }
-                        } else {
-                            showToast("Invalid PIN")
-                        }
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
+//                val editText = EditText(requireContext()).apply {
+//                    hint = "Enter PIN"
+//                    inputType = InputType.TYPE_CLASS_NUMBER
+//                    layoutParams = ViewGroup.LayoutParams(
+//                        ViewGroup.LayoutParams.MATCH_PARENT,
+//                        ViewGroup.LayoutParams.WRAP_CONTENT
+//                    )
+//                }
+//
+//                AlertDialog.Builder(requireContext())
+//                    .setTitle("PIN")
+//                    .setMessage("Enter the sender's PIN:")
+//                    .setView(editText)
+//                    .setPositiveButton("Confirm") { _, _ ->
+//                        val pin = editText.text.toString().trim()
+//                        if (pin.isNotBlank()) {
+//                            val receiverId = "${Build.MODEL}_${UUID.randomUUID()}"
+//
+//                            lookupPin(pin) { found, senderPeerId, error ->
+//                                if (found && senderPeerId != null) {
+//                                    Log.i(TAG, "Sender peerId: $senderPeerId")
+//                                    startWebRtcConnection(senderPeerId, receiverId)
+//
+////                                    acceptInvite(pin, receiverId) { accepted, senderIdOrError ->
+////                                        if (accepted && senderIdOrError != null) {
+////                                            Log.i(TAG, "Invitation accepted. SenderId: $senderIdOrError")
+////                                            val senderId = senderIdOrError
+////                                            startWebRtcConnection(senderId, receiverId)
+////                                        } else {
+////                                            showToast("Accept failed: $senderIdOrError")
+////                                        }
+////                                    }
+//
+//                                } else {
+//                                    showToast("PIN not found: $error")
+//                                }
+//                            }
+//                        } else {
+//                            showToast("Invalid PIN")
+//                        }
+//                    }
+//                    .setNegativeButton("Cancel", null)
+//                    .show()
             }
         }
+    }
+
+    private fun startP2PListener(peerId: String) {
+        val wsUrl = "ws://192.168.231.9:5151"
+        signalingClient = WebSocketSignalingClient(wsUrl, selfId)
+
+        // Initialize ReceiverSession with callbacks
+        receiverSession = ReceiverSession(
+            requireContext(),
+            signalingClient,
+            peerId,
+            onConnected = {
+                requireActivity().runOnUiThread {
+                    Toast.makeText(requireContext(), "Connection established", Toast.LENGTH_SHORT).show()
+                }
+            },
+            onDataReceived = { buffer: ByteBuffer ->
+                // Write incoming bytes to file
+                if (outputStream == null) {
+                    receivedFile = File(
+                        requireContext().externalCacheDir,
+                        "received_file_${System.currentTimeMillis()}"
+                    )
+                    outputStream = FileOutputStream(receivedFile)
+                }
+                val bytes = ByteArray(buffer.remaining())
+                buffer.get(bytes)
+                outputStream?.write(bytes)
+
+                // Optionally, update UI with progress here
+            }
+        )
+        receiverSession?.start()
+
+        // Listen for channel closure to finish writing
+        // (Session does not currently expose a callback for closure, so we rely on user to stop)
     }
 
     private fun startWebRtcConnection(senderId: String, receiverId: String) {

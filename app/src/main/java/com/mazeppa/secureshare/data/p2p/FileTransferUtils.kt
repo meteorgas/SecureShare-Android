@@ -18,7 +18,7 @@ object FileTransferUtils {
                 if (bytesRead == -1) break
 
                 val byteBuffer = ByteBuffer.wrap(buffer, 0, bytesRead)
-                val bufferToSend = DataChannel.Buffer(byteBuffer, false)
+                val bufferToSend = DataChannel.Buffer(byteBuffer, true)
                 dataChannel.send(bufferToSend)
             }
 

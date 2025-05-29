@@ -12,7 +12,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okio.IOException
 import org.json.JSONObject
-import org.webrtc.SessionDescription
 
 object PinPairingService {
 
@@ -111,7 +110,7 @@ object PinPairingService {
         })
     }
 
-    fun sendOfferToServer(pin: String, sdp: String) {
+    fun sendOfferToServer(pin: String, sdp: String, onComplete: (Boolean) -> Unit = {}) {
         val json = JSONObject().apply {
             put("pin", pin)
             put("sdp", sdp)
@@ -123,8 +122,14 @@ object PinPairingService {
             .build()
 
         OkHttpClient().newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {}
-            override fun onResponse(call: Call, response: Response) {}
+            override fun onFailure(call: Call, e: IOException) {
+                Log.e(TAG, "Failed to send offer: ${e.message}")
+                onComplete(false)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                onComplete(response.isSuccessful)
+            }
         })
     }
 
@@ -159,25 +164,5 @@ object PinPairingService {
         }
 
         handler.post(runnable)
-    }
-
-    fun connectAsSender(peerId: String, signalingClient: SignalingClient, webRtcManager: WebRtcManager) {
-        val peerConnection = webRtcManager.createPeerConnection { candidate ->
-            signalingClient.sendIceCandidate(peerId, candidate)
-        }
-
-        webRtcManager.createOffer { offer ->
-            peerConnection.setLocalDescription(SdpObserverAdapter(), offer)
-            signalingClient.sendOffer(peerId, offer)
-        }
-
-        signalingClient.onAnswerReceived { sdp ->
-            val answer = SessionDescription(SessionDescription.Type.ANSWER, sdp)
-            peerConnection.setRemoteDescription(SdpObserverAdapter(), answer)
-        }
-
-        signalingClient.onIceCandidateReceived { candidate ->
-            peerConnection.addIceCandidate(candidate)
-        }
     }
 }

@@ -1,6 +1,5 @@
 package com.mazeppa.secureshare.ui.send
 
-import android.R.attr.name
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Build
@@ -23,6 +22,8 @@ import com.mazeppa.secureshare.data.lan.model.DeviceInfo
 import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.sender.FileSender
 import com.mazeppa.secureshare.data.p2p.PinPairingService
+import com.mazeppa.secureshare.data.p2p.SenderSession
+import com.mazeppa.secureshare.data.p2p.WebSocketSignalingClient
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
 import com.mazeppa.secureshare.util.FileManager
 import com.mazeppa.secureshare.util.FileManager.formatSize
@@ -42,6 +43,10 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private lateinit var waitingDialog: AlertDialog
     private lateinit var binding: FragmentSendBinding
     private val outgoingFiles = mutableListOf<OutgoingFile>()
+
+    private lateinit var signalingClient: WebSocketSignalingClient
+    private var senderSession: SenderSession? = null
+    private val selfId = UUID.randomUUID().toString()
 
     private var onRemoveFile: ((Uri) -> Unit)? = null
     private var onSendFilesClicked: ((String) -> Unit)? = null
@@ -141,10 +146,15 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                         if (outgoingFiles.isNotEmpty()) {
                             sendInvitation(ip)
                         } else {
-                            Toast.makeText(requireContext(), "No files selected", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                requireContext(),
+                                "No files selected",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     } else {
-                        Toast.makeText(requireContext(), "Invalid IP address", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Invalid IP address", Toast.LENGTH_SHORT)
+                            .show()
                     }
                 }
                 .setNegativeButton("Cancel", null)
@@ -152,26 +162,81 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         }
 
         buttonRemoteConnection.setOnClickListener {
-            val deviceId = "${Build.MODEL}_${UUID.randomUUID()}"
+            if (outgoingFiles.isEmpty()) {
+                Toast.makeText(requireContext(), "Please select a file first", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
-            PinPairingService.generatePin(deviceId) { success, pin, errorOrPeerId ->
-                requireActivity().runOnUiThread {
-                    if (success) {
-                        val peerId = errorOrPeerId // this is actually peerId
-                        AlertDialog.Builder(requireContext())
-                            .setTitle("Your PIN")
-                            .setMessage("Share this PIN with the receiver:\n\n$pin")
-                            .setPositiveButton("OK", null)
-                            .show()
+            // Prompt for receiver PIN
+            val input = EditText(requireContext()).apply {
+                inputType = InputType.TYPE_CLASS_NUMBER
+                hint = "Enter receiver PIN"
+            }
 
-                        // TODO: Save deviceId and peerId for signaling
-                        Log.i("PIN_PAIR", "Your peerId: $peerId")
-                    } else {
-                        Toast.makeText(requireContext(), "Error: $errorOrPeerId", Toast.LENGTH_SHORT).show()
+            AlertDialog.Builder(requireContext())
+                .setTitle("Enter receiver PIN")
+                .setView(input)
+                .setPositiveButton("Connect") { _, _ ->
+                    val pin = input.text.toString().trim()
+                    if (pin.isEmpty()) {
+                        Toast.makeText(requireContext(), "PIN cannot be empty", Toast.LENGTH_SHORT).show()
+                        return@setPositiveButton
                     }
+                    startP2PSession(pin)
                 }
+                .setNegativeButton("Cancel", null)
+                .show()
+
+
+//            val deviceId = "${Build.MODEL}_${UUID.randomUUID()}"
+
+//            PinPairingService.generatePin(deviceId) { success, pin, errorOrPeerId ->
+//                requireActivity().runOnUiThread {
+//                    if (success) {
+//                        val peerId = errorOrPeerId // this is actually peerId
+//                        AlertDialog.Builder(requireContext())
+//                            .setTitle("Your PIN")
+//                            .setMessage("Share this PIN with the receiver:\n\n$pin")
+//                            .setPositiveButton("OK", null)
+//                            .show()
+//
+//                        // TODO: Save deviceId and peerId for signaling
+//                        Log.i("PIN_PAIR", "Your peerId: $peerId")
+//                    } else {
+//                        Toast.makeText(
+//                            requireContext(),
+//                            "Error: $errorOrPeerId",
+//                            Toast.LENGTH_SHORT
+//                        ).show()
+//                    }
+//                }
+//            }
+        }
+    }
+
+    private fun startP2PSession(pin: String) {
+        // Initialize WebSocket signaling
+        val wsUrl = "ws://192.168.231.9:5151"
+        signalingClient = WebSocketSignalingClient(wsUrl, selfId)
+
+        // Lookup receiver peerId via REST
+        PinPairingService.lookupPin(pin) { success, peerId, error ->
+            requireActivity().runOnUiThread {
+                if (!success || peerId.isNullOrEmpty()) {
+                    Toast.makeText(requireContext(), "PIN lookup failed: $error", Toast.LENGTH_LONG).show()
+                    return@runOnUiThread
+                }
+                // Start the P2P session
+                senderSession = SenderSession(requireContext(), selfId, signalingClient)
+                senderSession?.startSession(pin, outgoingFiles.first().uri)
+                Toast.makeText(requireContext(), "Sending file...", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        senderSession?.dispose()
     }
 
     private fun discoverDevices() {

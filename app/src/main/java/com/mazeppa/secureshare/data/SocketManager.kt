@@ -1,8 +1,4 @@
-package com.mazeppa.secureshare.data.p2p
-
-import android.util.Log
-import io.socket.client.IO
-import io.socket.client.Socket
+package com.mazeppa.secureshare.data
 
 //object SocketManager {
 //

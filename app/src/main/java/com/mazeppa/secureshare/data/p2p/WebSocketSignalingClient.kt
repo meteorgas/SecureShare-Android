@@ -1,133 +1,124 @@
 package com.mazeppa.secureshare.data.p2p
 
 import android.util.Log
-import com.mazeppa.secureshare.util.constant.BASE_URL
-import okhttp3.Call
-import okhttp3.Callback
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
 import org.webrtc.IceCandidate
 import org.webrtc.SessionDescription
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 class WebSocketSignalingClient(
-    serverUrl: String,
-    private val selfId: String
-) : SignalingClient {
-
-    private var offerCallback: ((String) -> Unit)? = null
-    private var answerCallback: ((String) -> Unit)? = null
-    private var candidateCallback: ((IceCandidate) -> Unit)? = null
-
+    private val serverUrl: String,        // e.g. "wss://your.server.com"
+    private val peerId: String,           // your UUID from /generate-pin
+    private val onOffer: (offer: SessionDescription, from: String) -> Unit,
+    private val onAnswer: (answer: SessionDescription, from: String) -> Unit,
+    private val onIceCandidate: (candidate: IceCandidate, from: String) -> Unit
+) {
+    private val TAG = "WS-SignalClient"
     private val client = OkHttpClient.Builder()
-        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .pingInterval(20, TimeUnit.SECONDS)  // keep-alive
         .build()
+    private var ws: WebSocket? = null
 
-    private var webSocket: WebSocket
+    /** Call once to open the socket and register yourself on the server. */
+    fun connect() {
+        val request = Request.Builder()
+            .url(serverUrl)
+            .build()
 
-    init {
-        val request = Request.Builder().url(serverUrl).build()
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
+        ws = client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                Log.d(TAG, "WS opened, registering peerId=$peerId")
+                val msg = JSONObject()
+                    .put("type", "register")
+                    .put("peerId", peerId)
+                webSocket.send(msg.toString())
+            }
+
             override fun onMessage(webSocket: WebSocket, text: String) {
+                Log.d(TAG, "WS recv → $text")
                 val json = JSONObject(text)
-                when (json.getString("type")) {
-                    "offer" -> offerCallback?.invoke(json.getString("sdp"))
-                    "answer" -> answerCallback?.invoke(json.getString("sdp"))
+                when (val type = json.getString("type")) {
+                    "offer" -> {
+                        val sdp = json.getString("sdp")
+                        val from = json.getString("from")
+                        onOffer(SessionDescription(SessionDescription.Type.OFFER, sdp), from)
+                    }
+
+                    "answer" -> {
+                        val sdp = json.getString("sdp")
+                        val from = json.getString("from")
+                        onAnswer(SessionDescription(SessionDescription.Type.ANSWER, sdp), from)
+                    }
+
                     "ice-candidate" -> {
-                        val candidate = IceCandidate(
-                            json.getString("sdpMid"),
-                            json.getInt("sdpMLineIndex"),
-                            json.getString("candidate")
+                        val candidateStr = json.getString("candidate")
+                        val sdpMid = json.getString("sdpMid")
+                        val sdpMLineIndex = json.getInt("sdpMLineIndex")
+                        val from = json.getString("from")
+                        onIceCandidate(
+                            IceCandidate(sdpMid, sdpMLineIndex, candidateStr),
+                            from
                         )
-                        candidateCallback?.invoke(candidate)
+                    }
+
+                    else -> {
+                        Log.w(TAG, "Unknown WS type: $type")
                     }
                 }
             }
 
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.i("SignalingClient", "WebSocket connected")
-                webSocket.send(JSONObject().apply {
-                    put("type", "register")
-                    put("peerId", selfId)
-                }.toString())
-            }
-
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e("SignalingClient", "WebSocket error: ${t.message}")
+                Log.e(TAG, "WS failure", t)
+            }
+
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WS closing: $code / $reason")
+                webSocket.close(1000, null)
             }
         })
     }
 
-    override fun sendOffer(peerId: String, offer: SessionDescription) {
-        val json = JSONObject().apply {
-            put("type", "offer")
-            put("to", peerId)
-            put("sdp", offer.description)
-        }
-        webSocket.send(json.toString())
+    /** Send your SDP offer to the given peerId */
+    fun sendOffer(sdp: SessionDescription, to: String) {
+        val msg = JSONObject()
+            .put("type", "offer")
+            .put("to", to)
+            .put("sdp", sdp.description)
+        ws?.send(msg.toString())
+        Log.d(TAG, "Sent offer → $to")
     }
 
-    override fun sendAnswer(peerId: String, answer: SessionDescription) {
-        val json = JSONObject().apply {
-            put("type", "answer")
-            put("to", peerId)
-            put("sdp", answer.description)
-        }
-        webSocket.send(json.toString())
+    /** Send your SDP answer to the given peerId */
+    fun sendAnswer(sdp: SessionDescription, to: String) {
+        val msg = JSONObject()
+            .put("type", "answer")
+            .put("to", to)
+            .put("sdp", sdp.description)
+        ws?.send(msg.toString())
+        Log.d(TAG, "Sent answer → $to")
     }
 
-    override fun sendIceCandidate(peerId: String, candidate: IceCandidate) {
-        val json = JSONObject().apply {
-            put("type", "ice-candidate")
-            put("to", peerId)
-            put("sdpMid", candidate.sdpMid)
-            put("sdpMLineIndex", candidate.sdpMLineIndex)
-            put("candidate", candidate.sdp)
-        }
-        webSocket.send(json.toString())
+    /** Send an ICE candidate to the given peerId */
+    fun sendIceCandidate(candidate: IceCandidate, to: String) {
+        val msg = JSONObject()
+            .put("type", "ice-candidate")
+            .put("to", to)
+            .put("candidate", candidate.sdp)
+            .put("sdpMid", candidate.sdpMid)
+            .put("sdpMLineIndex", candidate.sdpMLineIndex)
+        ws?.send(msg.toString())
+        Log.d(TAG, "Sent ICE → $to : ${candidate.sdp}")
     }
 
-    override fun lookupPin(pin: String, callback: (Boolean, String?, String?) -> Unit) {
-        val request = Request.Builder()
-            .url("$BASE_URL/lookup-pin")
-            .post(JSONObject().apply {
-                put("pin", pin)
-            }.toString().toRequestBody("application/json".toMediaType()))
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                callback(false, null, e.message)
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
-                    val body = response.body?.string()
-                    val peerId = JSONObject(body ?: "").optString("peerId", null)
-                    callback(true, peerId, null)
-                } else {
-                    callback(false, null, "Invalid or expired PIN")
-                }
-            }
-        })
-    }
-
-    override fun onOfferReceived(callback: (String) -> Unit) {
-        offerCallback = callback
-    }
-
-    override fun onAnswerReceived(callback: (String) -> Unit) {
-        answerCallback = callback
-    }
-
-    override fun onIceCandidateReceived(callback: (IceCandidate) -> Unit) {
-        candidateCallback = callback
+    /** Cleanly close the socket */
+    fun close() {
+        ws?.close(1000, "Client closing")
+        ws = null
+        client.dispatcher.executorService.shutdown()
     }
 }
