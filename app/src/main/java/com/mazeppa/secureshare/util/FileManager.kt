@@ -18,11 +18,6 @@ object FileManager {
         }
     }
 
-    fun removeUri(context: Context, uri: Uri, list: MutableList<Uri>): List<OutgoingFile> {
-        list.remove(uri)
-        return mapUrisToFiles(context, list)
-    }
-
     fun getFileSize(context: Context, uri: Uri): Long {
         val cursor = context.contentResolver.query(uri, null, null, null, null)
         return cursor?.use {

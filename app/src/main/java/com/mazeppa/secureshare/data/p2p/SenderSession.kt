@@ -21,9 +21,8 @@ import java.nio.ByteBuffer
 class SenderSession(
     private val context: Context,
     private val signalingClient: WebSocketSignalingClient,
-    private val localPeerId: String,      // from /generate-pin
-    private val remotePeerId: String,     // returned by /lookup-pin on receiver
-    private val fileUri: Uri,             // URI of the file to send
+    private val remotePeerId: String,
+    private val fileUri: Uri,
     private val onProgress: (percent: Int) -> Unit,
     private val onComplete: () -> Unit,
     private val onError: (Exception) -> Unit
@@ -31,11 +30,11 @@ class SenderSession(
     companion object {
         private const val TAG = "SenderSession"
     }
+
     private val scope = CoroutineScope(Dispatchers.IO)
     private var peerConnection: PeerConnection? = null
     private var dataChannel: DataChannel? = null
 
-    /** Kick off the WS + offer/answer exchange. */
     fun start() {
         peerConnection = WebRtcManager.getFactory()?.createPeerConnection(
             PeerConnection.RTCConfiguration(WebRtcManager.iceServers),
@@ -45,7 +44,6 @@ class SenderSession(
                 }
 
                 override fun onDataChannel(dc: DataChannel) {
-                    // Sender doesn't expect incoming DC
                 }
 
                 override fun onSignalingChange(newState: PeerConnection.SignalingState) {
@@ -100,8 +98,8 @@ class SenderSession(
         dataChannel = peerConnection?.createDataChannel(
             "fileChannel",
             DataChannel.Init().apply {
-                ordered = true          // preserve order
-                maxRetransmits = -1     // reliable
+                ordered = true
+                maxRetransmits = -1
             }
         )?.apply {
             registerObserver(object : DataChannel.Observer {
@@ -119,7 +117,6 @@ class SenderSession(
         }
     }
 
-    /** Call this when you get the remote SDP answer JSON. */
     fun onRemoteAnswer(answer: SessionDescription) {
         peerConnection?.setRemoteDescription(object : SdpObserver {
             override fun onSetSuccess() {
@@ -134,12 +131,10 @@ class SenderSession(
         }, answer)
     }
 
-    /** Call this when you get an ICE candidate JSON from remote. */
     fun onRemoteIceCandidate(candidate: IceCandidate) {
         peerConnection?.addIceCandidate(candidate)
     }
 
-    /** Read the file in 16 KB chunks and send each over DataChannel. */
     private fun sendFileChunks() {
         scope.launch {
             try {
@@ -176,7 +171,6 @@ class SenderSession(
         }
     }
 
-    /** Clean up everything when you’re done or on error. */
     fun close() {
         dataChannel?.close()
         peerConnection?.close()

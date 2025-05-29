@@ -1,6 +1,5 @@
 package com.mazeppa.secureshare.data.lan.invitation
 
-import android.app.AlertDialog
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -92,7 +91,12 @@ class InvitationServer : NanoHTTPD(5050) {
     ) {
         Handler(Looper.getMainLooper()).post {
             MaterialAlertDialogBuilder(context)
-                .setBackground(AppCompatResources.getDrawable(context, R.drawable.dialog_white_rounded))
+                .setBackground(
+                    AppCompatResources.getDrawable(
+                        context,
+                        R.drawable.dialog_white_rounded
+                    )
+                )
                 .setTitle("Incoming File")
                 .setMessage("Do you want to accept file: $fileName?")
                 .setPositiveButton("Accept") { _, _ -> onAccepted() }

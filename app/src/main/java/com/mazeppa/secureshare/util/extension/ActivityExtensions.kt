@@ -141,27 +141,6 @@ fun Activity.configureSystemBars(
 }
 
 /**
- * This function makes all views lose focus when user touches anywhere on the screen. This is used
- * losing and hiding keyboard when user touches outside of edit text.
- * This function should be called in [dispatchTouchEvent] method of Activity
- */
-fun Activity.loseFocusOnTouch(event: MotionEvent) {
-    if (event.action == MotionEvent.ACTION_DOWN) {
-        val v = currentFocus
-        if (v is EditText) {
-            val outRect = Rect()
-            v.getGlobalVisibleRect(outRect)
-            if (!outRect.contains(event.rawX.toInt(), event.rawY.toInt())) {
-                v.clearFocus()
-                val imm =
-                    getSystemService(AppCompatActivity.INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.hideSoftInputFromWindow(v.getWindowToken(), 0)
-            }
-        }
-    }
-}
-
-/**
  * Returns whether app is in night or light mode
  */
 //TODO: Don't forget to uncomment to enable dark mode
@@ -173,31 +152,4 @@ fun Activity.isLightMode(): Boolean {
             false
         }
     }*/
-}
-
-@Suppress("DEPRECATION")
-fun Activity.activityTransition(enterAnim: Int, exitAnim: Int) {
-    overridePendingTransition(enterAnim, exitAnim)
-}
-
-fun Activity.dp(value: Float): Int {
-    return TypedValue.applyDimension(
-        TypedValue.COMPLEX_UNIT_DIP,
-        value,
-        resources.displayMetrics
-    ).toInt()
-}
-
-fun Activity.getTempFileUri(): Uri {
-    val tmpFile =
-        File.createTempFile("tmp_image_file", ".png", cacheDir).apply {
-            createNewFile()
-            deleteOnExit()
-        }
-
-    return FileProvider.getUriForFile(
-        this,
-        "${BuildConfig.APPLICATION_ID}.provider",
-        tmpFile
-    )
 }

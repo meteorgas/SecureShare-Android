@@ -1,10 +1,8 @@
 package com.mazeppa.secureshare.data.client_server
 
-import android.app.DownloadManager
 import android.content.Context
 import android.os.Environment
 import android.util.Log
-import androidx.core.net.toUri
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -13,11 +11,15 @@ import okhttp3.Response
 import okio.IOException
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URLConnection
 
 object FileDownloader {
 
-    fun downloadFile(context: Context, fileUrl: String, fileName: String, callback: (Boolean, String) -> Unit) {
+    fun downloadFile(
+        context: Context,
+        fileUrl: String,
+        fileName: String,
+        callback: (Boolean, String) -> Unit
+    ) {
         Log.d("Downloader", "Downloading from: $fileUrl")
 
         val request = Request.Builder()
@@ -44,7 +46,8 @@ object FileDownloader {
                 }
 
                 try {
-                    val downloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                    val downloads =
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                     val file = File(downloads, fileName)
                     val outputStream = FileOutputStream(file)
 

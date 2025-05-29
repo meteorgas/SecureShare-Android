@@ -274,7 +274,6 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         senderSession = SenderSession(
             requireContext(),
             signalingClient!!,
-            localPeerId = peerId,
             remotePeerId = remotePeerId,
             fileUri = uri,
             onProgress = { pct ->

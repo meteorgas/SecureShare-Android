@@ -12,8 +12,8 @@ import org.webrtc.SessionDescription
 import java.util.concurrent.TimeUnit
 
 class WebSocketSignalingClient(
-    private val serverUrl: String,        // e.g. "wss://your.server.com"
-    private val peerId: String,           // your UUID from /generate-pin
+    private val serverUrl: String,
+    private val peerId: String,
     private val onOffer: (offer: SessionDescription, from: String) -> Unit,
     private val onAnswer: (answer: SessionDescription, from: String) -> Unit,
     private val onIceCandidate: (candidate: IceCandidate, from: String) -> Unit,
@@ -25,7 +25,6 @@ class WebSocketSignalingClient(
         .build()
     private var ws: WebSocket? = null
 
-    /** Call once to open the socket and register yourself on the server. */
     fun connect() {
         val request = Request.Builder()
             .url(serverUrl)
@@ -85,7 +84,6 @@ class WebSocketSignalingClient(
         })
     }
 
-    /** Send your SDP offer to the given peerId */
     fun sendOffer(sdp: SessionDescription, to: String) {
         val msg = JSONObject()
             .put("type", "offer")
@@ -95,7 +93,6 @@ class WebSocketSignalingClient(
         Log.d(TAG, "Sent offer → $to")
     }
 
-    /** Send your SDP answer to the given peerId */
     fun sendAnswer(sdp: SessionDescription, to: String) {
         val msg = JSONObject()
             .put("type", "answer")
@@ -105,7 +102,6 @@ class WebSocketSignalingClient(
         Log.d(TAG, "Sent answer → $to")
     }
 
-    /** Send an ICE candidate to the given peerId */
     fun sendIceCandidate(candidate: IceCandidate, to: String) {
         val msg = JSONObject()
             .put("type", "ice-candidate")
@@ -117,7 +113,6 @@ class WebSocketSignalingClient(
         Log.d(TAG, "Sent ICE → $to : ${candidate.sdp}")
     }
 
-    /** Cleanly close the socket */
     fun close() {
         ws?.close(1000, "Client closing")
         ws = null

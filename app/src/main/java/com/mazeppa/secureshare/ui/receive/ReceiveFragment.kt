@@ -265,7 +265,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         receiverSession = ReceiverSession(
             requireContext(),
             signalingClient!!,
-            localPeerId = lp,
             remotePeerId = rp,
             targetFileUri = uri,
             onProgress = { bytes ->

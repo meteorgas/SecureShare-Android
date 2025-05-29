@@ -17,7 +17,6 @@ import java.io.OutputStream
 class ReceiverSession(
     private val context: Context,
     private val signalingClient: WebSocketSignalingClient,
-    private val localPeerId: String,     // your UUID from /generate-pin
     private val remotePeerId: String,    // sender’s peerId (from lookup-pin)
     private val targetFileUri: Uri,      // where to save incoming bytes
     private val onProgress: (bytesReceived: Long) -> Unit,

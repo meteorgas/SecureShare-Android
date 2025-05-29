@@ -9,12 +9,6 @@ import java.net.NetworkInterface
 import java.net.URL
 
 object Utility {
-    fun formatTime(seconds: Double): String {
-        val mins = (seconds / 60).toInt()
-        val secs = (seconds % 60).toInt()
-        return if (mins > 0) "$mins min $secs sec" else "$secs sec"
-    }
-
     fun getLocalIpAddress(): String? {
         try {
             val interfaces = NetworkInterface.getNetworkInterfaces()

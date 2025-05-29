@@ -15,11 +15,9 @@ import com.mazeppa.secureshare.databinding.LayoutSnackbarBinding
 
 abstract class BaseActivity<Binding : ViewBinding> : AppCompatActivity() {
 
-    //    lateinit var connectionObserver: ConnectionObserver
     private var _binding: Binding? = null
     val binding: Binding get() = checkNotNull(_binding) { "Binding is null" }
     abstract val onInflate: (LayoutInflater) -> Binding
-//    val viewSize: WidthHeight get() = binding.root.width to binding.root.height
 
     //Decides whether [BaseActivity] should configure system bars itself or not
     private val configureSystemBars: Boolean = true
@@ -28,22 +26,6 @@ abstract class BaseActivity<Binding : ViewBinding> : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         println("Current activity ${this::class.java.simpleName}")
 
-        //TODO: Uncomment this to enable dark mode
-        /*AppCompatDelegate.setDefaultNightMode(
-            when (PreferenceProperties.uiMode) {
-                UIMode.Dark -> {
-                    AppCompatDelegate.MODE_NIGHT_YES
-                }
-
-                UIMode.Light -> {
-                    AppCompatDelegate.MODE_NIGHT_NO
-                }
-
-                else -> {
-                    AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                }
-            }
-        )*/
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
 
         _binding = onInflate(layoutInflater)
@@ -65,33 +47,6 @@ abstract class BaseActivity<Binding : ViewBinding> : AppCompatActivity() {
         }
     }
 
-//    private fun connectionObserver() {
-//        connectionObserver = NetworkConnectivityObserver(this@BaseActivity)
-//        val composeViewConnection =
-//            binding.root.findViewById<ComposeView>(R.id.composeViewConnection)
-//
-//        composeViewConnection?.setContent {
-//            val status by connectionObserver.observe()
-//                .collectAsState(
-//                    initial = (if (isInternetAvailable()) ConnectionObserver.Status.Available else ConnectionObserver.Status.Unavailable)
-//                )
-//
-//            ConnectionNotifier(status)
-//        }
-//    }
-
-    private fun errorObserver() {
-//        val composeViewError =
-//            binding.root.findViewById<ComposeView>(R.id.composeViewError)
-//        composeViewError?.setContent {
-//            val snackbarData by data.collectAsState(initial = SnackbarData(""))
-//
-//            if (snackbarData.message.isNotEmpty()) {
-//                Snackbar(data = snackbarData)
-//            }
-//        }
-    }
-
     /**
      * Handles restoration of language
      */
@@ -106,13 +61,6 @@ abstract class BaseActivity<Binding : ViewBinding> : AppCompatActivity() {
     }
 
     open fun updateConfigurationIfSupported(config: Configuration): Configuration? {
-//        if (!config.locales.isEmpty) {
-//            return config
-//        }
-//        val languageCode = PreferenceProperties.language.lang
-//        val locale = Locale(languageCode)
-//        config.setLocale(locale)
-//        Locale.setDefault(locale)
         return config
     }
 
