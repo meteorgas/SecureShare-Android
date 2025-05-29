@@ -1,119 +1,144 @@
 package com.mazeppa.secureshare.data.p2p
 
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import org.webrtc.DataChannel
 import org.webrtc.IceCandidate
 import org.webrtc.MediaConstraints
 import org.webrtc.MediaStream
 import org.webrtc.PeerConnection
+import org.webrtc.RtpReceiver
 import org.webrtc.SdpObserver
 import org.webrtc.SessionDescription
-import java.nio.ByteBuffer
+import java.io.IOException
+import java.io.OutputStream
 
 class ReceiverSession(
     private val context: Context,
-    private val signalingClient: SignalingClient,
-    private val peerId: String,
-    private val onConnected: () -> Unit,
-    private val onDataReceived: (ByteBuffer) -> Unit
+    private val signalingClient: WebSocketSignalingClient,
+    private val localPeerId: String,     // your UUID from /generate-pin
+    private val remotePeerId: String,    // sender’s peerId (from lookup-pin)
+    private val targetFileUri: Uri,      // where to save incoming bytes
+    private val onProgress: (bytesReceived: Long) -> Unit,
+    private val onComplete: () -> Unit,
+    private val onError: (Exception) -> Unit
 ) {
-    private lateinit var peerConnection: PeerConnection
+    private val TAG = "ReceiverSession"
+    private var fileOut: OutputStream? = null
+    private var bytesReceived = 0L
 
-    fun start() {
-        WebRtcManager.initialize(context)
-
-        peerConnection = WebRtcManager.createPeerConnection { candidate ->
-            signalingClient.sendIceCandidate(peerId, candidate)
-        }
-
-        // Register PeerConnection Observer
-        val observer = object : PeerConnection.Observer {
-            override fun onIceCandidate(candidate: IceCandidate) {
-                signalingClient.sendIceCandidate(peerId, candidate)
+    // 1) Build the PeerConnection
+    private val pc: PeerConnection = WebRtcManager.getFactory()?.createPeerConnection(
+        PeerConnection.RTCConfiguration(WebRtcManager.iceServers),
+        object : PeerConnection.Observer {
+            override fun onSignalingChange(newState: PeerConnection.SignalingState) {}
+            override fun onIceConnectionChange(state: PeerConnection.IceConnectionState) {}
+            override fun onIceConnectionReceivingChange(p0: Boolean) {
+                Log.i(TAG, "ICE connection receiving change: $p0")
             }
 
-            override fun onDataChannel(channel: DataChannel) {
-                Log.d("ReceiverSession", "DataChannel received.")
-                channel.registerObserver(object : DataChannel.Observer {
-                    override fun onMessage(buffer: DataChannel.Buffer) {
-                        onDataReceived(buffer.data)
-                    }
+            override fun onIceGatheringChange(state: PeerConnection.IceGatheringState) {}
+            override fun onIceCandidatesRemoved(candidates: Array<IceCandidate>) {}
+            override fun onAddStream(stream: MediaStream) {}
+            override fun onRemoveStream(stream: MediaStream) {}
+            override fun onAddTrack(receiver: RtpReceiver, streams: Array<out MediaStream>) {}
+            override fun onRenegotiationNeeded() {}
+            override fun onIceCandidate(candidate: IceCandidate) {
+                // forward our ICE to the sender
+                signalingClient.sendIceCandidate(candidate, remotePeerId)
+            }
+
+            override fun onDataChannel(dc: DataChannel) {
+                Log.d(TAG, "Incoming DataChannel")
+                dc.registerObserver(object : DataChannel.Observer {
+                    override fun onBufferedAmountChange(prev: Long) {}
 
                     override fun onStateChange() {
-                        if (channel.state() == DataChannel.State.OPEN) {
-                            onConnected()
+                        when (dc.state()) {
+                            DataChannel.State.OPEN -> {
+                                Log.d(TAG, "DC OPEN – preparing file")
+                                try {
+                                    fileOut = context.contentResolver
+                                        .openOutputStream(targetFileUri)
+                                        ?: throw IOException("Cannot open $targetFileUri")
+                                } catch (e: Exception) {
+                                    onError(e)
+                                }
+                            }
+
+                            DataChannel.State.CLOSED -> {
+                                Log.d(TAG, "DC CLOSED – finishing write")
+                                fileOut?.close()
+                                onComplete()
+                            }
+
+                            else -> {}
                         }
                     }
 
-                    override fun onBufferedAmountChange(p0: Long) {}
+                    override fun onMessage(buffer: DataChannel.Buffer) {
+                        try {
+                            val bytes = ByteArray(buffer.data.remaining())
+                            buffer.data.get(bytes)
+                            fileOut?.write(bytes)
+                            bytesReceived += bytes.size
+                            onProgress(bytesReceived)
+                        } catch (e: Exception) {
+                            onError(e)
+                        }
+                    }
                 })
             }
-
-            override fun onSignalingChange(newState: PeerConnection.SignalingState?) {}
-            override fun onIceConnectionChange(newState: PeerConnection.IceConnectionState?) {}
-            override fun onIceConnectionReceivingChange(receiving: Boolean) {}
-            override fun onIceGatheringChange(newState: PeerConnection.IceGatheringState?) {}
-            override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>) {}
-            override fun onAddStream(stream: MediaStream?) {}
-            override fun onRemoveStream(stream: MediaStream?) {}
-            override fun onRenegotiationNeeded() {}
         }
+    ) ?: throw IllegalStateException("Failed to create PeerConnection")
 
-        // Re-create the peer connection with the proper observer
-        peerConnection.close()
-        peerConnection = WebRtcManager.getFactory()!!.createPeerConnection(
-            WebRtcManager.iceServers,
-            observer
-        ) ?: throw IllegalStateException("Failed to create PeerConnection")
-
-        // Handle offer from sender
-        signalingClient.onOfferReceived { sdp ->
-            val offer = SessionDescription(SessionDescription.Type.OFFER, sdp)
-            peerConnection.setRemoteDescription(object : SdpObserver {
-                override fun onSetSuccess() {
-                    Log.d("ReceiverSession", "Remote offer set. Creating answer...")
-                    peerConnection.createAnswer(object : SdpObserver {
-                        override fun onCreateSuccess(answer: SessionDescription) {
-                            peerConnection.setLocalDescription(object : SdpObserver {
-                                override fun onSetSuccess() {
-                                    signalingClient.sendAnswer(peerId, answer)
-                                }
-
-                                override fun onSetFailure(error: String?) {
-                                    Log.e("ReceiverSession", "Failed to set local answer: $error")
-                                }
-
-                                override fun onCreateSuccess(p0: SessionDescription?) {}
-                                override fun onCreateFailure(p0: String?) {}
-                            }, answer)
-                        }
-
-                        override fun onCreateFailure(error: String?) {
-                            Log.e("ReceiverSession", "Failed to create answer: $error")
-                        }
-
-                        override fun onSetSuccess() {}
-                        override fun onSetFailure(p0: String?) {}
-                    }, MediaConstraints())
-                }
-
-                override fun onSetFailure(error: String?) {
-                    Log.e("ReceiverSession", "Failed to set remote offer: $error")
-                }
-
-                override fun onCreateSuccess(p0: SessionDescription?) {}
-                override fun onCreateFailure(p0: String?) {}
-            }, offer)
-        }
-
-        // Handle ICE candidates from sender
-        signalingClient.onIceCandidateReceived { candidate ->
-            peerConnection.addIceCandidate(candidate)
-        }
+    /** Start the WebSocket & wait for the offer to arrive. */
+    fun start() {
+        signalingClient.connect()
+        // Make sure you passed in onOffer = { desc, from -> session.onRemoteOffer(desc) }
     }
 
-    fun dispose() {
-        peerConnection.close()
+    /** Call when your WebSocket client hands you a remote OFFER. */
+    fun onRemoteOffer(offer: SessionDescription) {
+        pc.setRemoteDescription(object : SdpObserver {
+            override fun onSetSuccess() {
+                Log.d(TAG, "Remote SDP set → creating ANSWER")
+                // Generate our answer
+                pc.createAnswer(object : SdpObserver {
+                    override fun onCreateSuccess(answer: SessionDescription) {
+                        pc.setLocalDescription(object : SdpObserver {
+                            override fun onSetSuccess() {
+                                signalingClient.sendAnswer(answer, remotePeerId)
+                            }
+
+                            override fun onSetFailure(err: String) = onError(Exception(err))
+                            override fun onCreateSuccess(p0: SessionDescription?) {}
+                            override fun onCreateFailure(p0: String?) {}
+                        }, answer)
+                    }
+
+                    override fun onCreateFailure(err: String) = onError(Exception(err))
+                    override fun onSetSuccess() {}
+                    override fun onSetFailure(err: String) = onError(Exception(err))
+                }, MediaConstraints())
+            }
+
+            override fun onSetFailure(err: String) = onError(Exception(err))
+            override fun onCreateSuccess(p0: SessionDescription?) {}
+            override fun onCreateFailure(p0: String?) {}
+        }, offer)
+    }
+
+    /** Call when you get an ICE‐candidate from the sender. */
+    fun onRemoteIceCandidate(candidate: IceCandidate) {
+        pc.addIceCandidate(candidate)
+    }
+
+    /** Tear down when you’re done. */
+    fun close() {
+        pc.close()
+        fileOut?.close()
+        signalingClient.close()
     }
 }

@@ -76,4 +76,63 @@
         app:layout_constraintStart_toStartOf="@id/cardViewSelection"
         app:layout_constraintTop_toBottomOf="@id/cardViewSelection" />
 
+    <EditText
+        android:id="@+id/editTextPin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/textViewStatusText"
+        app:layout_constraintStart_toStartOf="@id/cardViewSelection"
+        app:layout_constraintEnd_toEndOf="@id/cardViewSelection"
+        android:layout_marginTop="20dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonPickFile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pick File"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/editTextPin"
+        app:layout_constraintEnd_toEndOf="@id/editTextPin"
+        app:layout_constraintStart_toStartOf="@id/editTextPin" />
+
+ <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonReceiveFile"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Receive File"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/buttonPickFile"
+        app:layout_constraintEnd_toEndOf="@id/buttonPickFile"
+        app:layout_constraintStart_toStartOf="@id/buttonPickFile" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="0dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="10dp"
+        android:indeterminate="false"
+        android:indeterminateOnly="false"
+        android:indeterminateTintMode="src_in"
+        android:max="100"
+        android:progress="0"
+        android:progressBackgroundTint="@color/colorWhiteTone1"
+        android:progressTint="@color/colorPrimary"
+        app:layout_constraintTop_toBottomOf="@id/buttonReceiveFile"
+        app:layout_constraintEnd_toEndOf="@id/cardViewSelection"
+        app:layout_constraintStart_toStartOf="@id/cardViewSelection"
+        tools:progress="50" />
+
+
+    <TextView
+        android:id="@+id/textViewFileName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:text="FileName"
+        app:layout_constraintEnd_toEndOf="@id/progressBar"
+        app:layout_constraintStart_toStartOf="@id/progressBar"
+        app:layout_constraintTop_toBottomOf="@id/progressBar" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -132,4 +132,32 @@
             tools:listitem="@layout/list_item_outgoing_file" />
     </com.google.android.material.card.MaterialCardView>
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/buttonSend"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/text_send"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toTopOf="@id/progressBar"
+        app:layout_constraintEnd_toEndOf="@id/progressBar"
+        app:layout_constraintStart_toStartOf="@id/progressBar" />
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="0dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="4dp"
+        android:indeterminate="false"
+        android:indeterminateOnly="false"
+        android:indeterminateTintMode="src_in"
+        android:max="100"
+        android:progress="0"
+        android:progressBackgroundTint="@color/colorWhiteTone1"
+        android:progressTint="@color/colorPrimary"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@id/cardViewDevices"
+        app:layout_constraintStart_toStartOf="@id/cardViewDevices"
+        tools:progress="50" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

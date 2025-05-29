@@ -1,14 +1,14 @@
 package com.mazeppa.secureshare.ui.receive
 
 import android.annotation.SuppressLint
-import android.os.Build
+import android.app.Activity
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
-import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
@@ -19,40 +19,43 @@ import com.mazeppa.secureshare.data.lan.model.IncomingFile
 import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.receiver.FileDownloadHandler
 import com.mazeppa.secureshare.data.lan.receiver.FileReceiver
-import com.mazeppa.secureshare.data.p2p.PinPairingService
-import com.mazeppa.secureshare.data.p2p.PinPairingService.acceptInvite
-import com.mazeppa.secureshare.data.p2p.PinPairingService.lookupPin
 import com.mazeppa.secureshare.data.p2p.ReceiverSession
-import com.mazeppa.secureshare.data.p2p.SdpObserverAdapter
-import com.mazeppa.secureshare.data.p2p.WebRtcManager
 import com.mazeppa.secureshare.data.p2p.WebSocketSignalingClient
 import com.mazeppa.secureshare.databinding.FragmentReceiveBinding
 import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
 import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.Utility.getLocalIpAddress
 import com.mazeppa.secureshare.util.Utility.getPublicIpAddress
-import com.mazeppa.secureshare.util.constant.BASE_URL
-import com.mazeppa.secureshare.util.extension.showToast
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.webrtc.SessionDescription
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import java.util.UUID
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import okio.IOException
+import org.json.JSONObject
 
 class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
     companion object {
         private const val TAG = "ReceiveFragment"
+        private const val REQUEST_CODE_CREATE_FILE = 2001
     }
 
-    private lateinit var signalingClient: WebSocketSignalingClient
-    private var receiverSession: ReceiverSession? = null
-    private val selfId = UUID.randomUUID().toString()
-    private var outputStream: FileOutputStream? = null
-    private lateinit var receivedFile: File
+    private val httpBaseUrl = "http://192.168.231.9:5151"
+    private val wsUrl = "ws://192.168.231.9:5151"
 
+    // Will be set after lookup-pin
+    private var localPeerId: String? = null
+    private var remotePeerId: String? = null
+
+    private var signalingClient: WebSocketSignalingClient? = null
+    private var receiverSession: ReceiverSession? = null
+
+    // Chosen save location
+    private var targetFileUri: Uri? = null
 
     private lateinit var fileReceiver: FileReceiver
     private lateinit var binding: FragmentReceiveBinding
@@ -113,8 +116,8 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         Log.i(TAG, "onDestroyView called, stopping file receiver and peer discovery.")
         PeerDiscovery.stopPeerDiscoveryReceiver()
         InvitationServer.Companion.stopServer()
-        receiverSession?.dispose()
-        outputStream?.close()
+        receiverSession?.close()
+        signalingClient?.close()
     }
 
     @SuppressLint("SetTextI18n")
@@ -134,133 +137,141 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             }
 
             buttonRemoteConnection.setOnClickListener {
-                PinPairingService.generatePin(selfId) { success, pin, peerId ->
-                    requireActivity().runOnUiThread {
-                        if (!success || pin.isNullOrEmpty() || peerId.isNullOrEmpty()) {
-                            Toast.makeText(requireContext(), "Failed to generate PIN", Toast.LENGTH_LONG).show()
-                            return@runOnUiThread
-                        }
-                        // Show the PIN to the user
-                        AlertDialog.Builder(requireContext())
-                            .setTitle("Share this PIN with sender")
-                            .setMessage("PIN: $pin")
-                            .setPositiveButton("OK", null)
-                            .show()
-
-                        // Start P2P listener
-                        startP2PListener(peerId)
-                    }
+                val pin = binding.editTextPin.text.toString().trim()
+                if (pin.isEmpty()) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Enter the PIN from sender",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    lookupPin(pin)
                 }
+            }
 
-//                val editText = EditText(requireContext()).apply {
-//                    hint = "Enter PIN"
-//                    inputType = InputType.TYPE_CLASS_NUMBER
-//                    layoutParams = ViewGroup.LayoutParams(
-//                        ViewGroup.LayoutParams.MATCH_PARENT,
-//                        ViewGroup.LayoutParams.WRAP_CONTENT
-//                    )
-//                }
-//
-//                AlertDialog.Builder(requireContext())
-//                    .setTitle("PIN")
-//                    .setMessage("Enter the sender's PIN:")
-//                    .setView(editText)
-//                    .setPositiveButton("Confirm") { _, _ ->
-//                        val pin = editText.text.toString().trim()
-//                        if (pin.isNotBlank()) {
-//                            val receiverId = "${Build.MODEL}_${UUID.randomUUID()}"
-//
-//                            lookupPin(pin) { found, senderPeerId, error ->
-//                                if (found && senderPeerId != null) {
-//                                    Log.i(TAG, "Sender peerId: $senderPeerId")
-//                                    startWebRtcConnection(senderPeerId, receiverId)
-//
-////                                    acceptInvite(pin, receiverId) { accepted, senderIdOrError ->
-////                                        if (accepted && senderIdOrError != null) {
-////                                            Log.i(TAG, "Invitation accepted. SenderId: $senderIdOrError")
-////                                            val senderId = senderIdOrError
-////                                            startWebRtcConnection(senderId, receiverId)
-////                                        } else {
-////                                            showToast("Accept failed: $senderIdOrError")
-////                                        }
-////                                    }
-//
-//                                } else {
-//                                    showToast("PIN not found: $error")
-//                                }
-//                            }
-//                        } else {
-//                            showToast("Invalid PIN")
-//                        }
-//                    }
-//                    .setNegativeButton("Cancel", null)
-//                    .show()
+            // 2) When user clicks "Pick Save Location", open the create-document picker
+            binding.buttonPickFile.setOnClickListener {
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_TITLE, "received_file")
+                }
+                startActivityForResult(intent, REQUEST_CODE_CREATE_FILE)
+            }
+
+            // 3) When user clicks "Receive File", kick off WebRTC receive flow
+            binding.buttonReceiveFile.setOnClickListener {
+                startWebRtcReceive()
             }
         }
     }
 
-    private fun startP2PListener(peerId: String) {
-        val wsUrl = "ws://192.168.231.9:5151"
-        signalingClient = WebSocketSignalingClient(wsUrl, selfId)
+    /** Step 1: POST { pin } → /lookup-pin to get the sender’s peerId */
+    private fun lookupPin(pin: String) {
+        binding.progressBar.visibility = View.VISIBLE
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val client = OkHttpClient()
+                val body = JSONObject().put("pin", pin)
+                    .toString()
+                    .toRequestBody("application/json".toMediaType())
 
-        // Initialize ReceiverSession with callbacks
+                val req = Request.Builder()
+                    .url("$httpBaseUrl/lookup-pin")
+                    .post(body)
+                    .build()
+
+                client.newCall(req).execute().use { resp ->
+                    if (!resp.isSuccessful) throw IOException("Code ${resp.code}")
+                    val json = JSONObject(resp.body!!.string())
+                    // the server returns { peerId: "..." }
+                    remotePeerId = json.getString("peerId")
+                }
+
+                // generate our own localPeerId
+//                localPeerId = UUID.randomUUID().toString()
+                localPeerId = pin
+
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    Toast.makeText(
+                        requireContext(),
+                        "Found sender. Your ID: $localPeerId",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    // enable the next steps
+                    binding.buttonPickFile.isEnabled = true
+                    binding.buttonReceiveFile.isEnabled = true
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    Toast.makeText(
+                        requireContext(),
+                        "Lookup failed: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    /** Step 3: Wire WS + WebRTC and start receiving */
+    private fun startWebRtcReceive() {
+        val lp = localPeerId
+        val rp = remotePeerId
+        val uri = targetFileUri
+
+        if (lp == null || rp == null) {
+            Toast.makeText(requireContext(), "Please lookup the PIN first", Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        if (uri == null) {
+            Toast.makeText(requireContext(), "Please pick a save location", Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+
+        // 3a) Create & connect the WS client
+        signalingClient = WebSocketSignalingClient(
+            wsUrl,
+            lp,
+            onOffer = { offer, from ->
+                receiverSession?.onRemoteOffer(offer)
+            },
+            onAnswer = { _, _ -> /* not used on receiver */ },
+            onIceCandidate = { candidate, _ ->
+                receiverSession?.onRemoteIceCandidate(candidate)
+            }
+        ).apply { connect() }
+
+        // 3b) Create the ReceiverSession
         receiverSession = ReceiverSession(
             requireContext(),
-            signalingClient,
-            peerId,
-            onConnected = {
-                requireActivity().runOnUiThread {
-                    Toast.makeText(requireContext(), "Connection established", Toast.LENGTH_SHORT).show()
-                }
+            signalingClient!!,
+            localPeerId = lp,
+            remotePeerId = rp,
+            targetFileUri = uri,
+            onProgress = { bytes ->
+                // If you want %, you could track file size separately
+                binding.progressBar.progress = (bytes % 100).toInt()
             },
-            onDataReceived = { buffer: ByteBuffer ->
-                // Write incoming bytes to file
-                if (outputStream == null) {
-                    receivedFile = File(
-                        requireContext().externalCacheDir,
-                        "received_file_${System.currentTimeMillis()}"
-                    )
-                    outputStream = FileOutputStream(receivedFile)
-                }
-                val bytes = ByteArray(buffer.remaining())
-                buffer.get(bytes)
-                outputStream?.write(bytes)
-
-                // Optionally, update UI with progress here
+            onComplete = {
+                Toast.makeText(requireContext(), "File received!", Toast.LENGTH_LONG).show()
+            },
+            onError = { ex ->
+                Toast.makeText(requireContext(), "Receive error: ${ex.message}", Toast.LENGTH_LONG)
+                    .show()
             }
-        )
-        receiverSession?.start()
-
-        // Listen for channel closure to finish writing
-        // (Session does not currently expose a callback for closure, so we rely on user to stop)
+        ).also { it.start() }
     }
 
-    private fun startWebRtcConnection(senderId: String, receiverId: String) {
-        val signalingClient = WebSocketSignalingClient("ws://10.200.13.65:5151", receiverId)
-
-        val peerConnection = WebRtcManager.createPeerConnection { candidate ->
-            signalingClient.sendIceCandidate(senderId, candidate)
-        }
-
-        signalingClient.onAnswerReceived { sdp ->
-            Log.i(TAG, "Answer received from sender")
-            peerConnection.setRemoteDescription(
-                object : SdpObserverAdapter() {
-                    override fun onSetSuccess() {
-                        Log.i(TAG, "Remote description set successfully")
-                    }
-                },
-                SessionDescription(SessionDescription.Type.ANSWER, sdp)
-            )
-        }
-
-        signalingClient.onIceCandidateReceived { candidate ->
-            Log.i(TAG, "ICE candidate received")
-            peerConnection.addIceCandidate(candidate)
-        }
-
-        WebRtcManager.createOffer { offer ->
-            signalingClient.sendOffer(senderId, offer)
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CODE_CREATE_FILE && resultCode == Activity.RESULT_OK) {
+            targetFileUri = data?.data
+            binding.textViewFileName.text = targetFileUri?.lastPathSegment ?: "Unknown"
         }
     }
 
