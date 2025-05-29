@@ -10,7 +10,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
@@ -21,13 +20,15 @@ import com.mazeppa.secureshare.data.lan.invitation.InvitationSender
 import com.mazeppa.secureshare.data.lan.model.DeviceInfo
 import com.mazeppa.secureshare.data.lan.peer_discovery.PeerDiscovery
 import com.mazeppa.secureshare.data.lan.sender.FileSender
-import com.mazeppa.secureshare.data.p2p.PinPairingService
 import com.mazeppa.secureshare.data.p2p.SenderSession
 import com.mazeppa.secureshare.data.p2p.WebSocketSignalingClient
 import com.mazeppa.secureshare.databinding.FragmentSendBinding
 import com.mazeppa.secureshare.util.FileManager
 import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.FileManager.getFileSize
+import com.mazeppa.secureshare.util.constant.BASE_URL
+import com.mazeppa.secureshare.util.constant.BASE_URL_2
+import com.mazeppa.secureshare.util.extension.showToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,7 +39,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.IOException
 import org.json.JSONObject
-import java.util.UUID
 
 class SendFragment : Fragment(), FileSender.FileSenderListener {
 
@@ -47,8 +47,8 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     }
 
     // Replace with your real server URL
-    private val httpBaseUrl = "http://192.168.231.9:5151"
-    private val wsUrl = "ws://192.168.231.9:5151"
+    private val httpBaseUrl = "https://$BASE_URL"
+    private val wsUrl = "wss://$BASE_URL_2"
 
     // These will be set once we have a PIN
     private var localPeerId: String? = null
@@ -76,8 +76,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     private val devicesAdapter by lazy {
         DeviceListAdapter { ip ->
             if (outgoingFiles.isNotEmpty()) sendInvitation(ip)
-            else Toast.makeText(requireContext(), "No files selected to send", Toast.LENGTH_SHORT)
-                .show()
+            else showToast("No files selected to send")
         }
     }
 
@@ -161,15 +160,10 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                         if (outgoingFiles.isNotEmpty()) {
                             sendInvitation(ip)
                         } else {
-                            Toast.makeText(
-                                requireContext(),
-                                "No files selected",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            showToast("No files selected")
                         }
                     } else {
-                        Toast.makeText(requireContext(), "Invalid IP address", Toast.LENGTH_SHORT)
-                            .show()
+                        showToast("Invalid IP address")
                     }
                 }
                 .setNegativeButton("Cancel", null)
@@ -206,18 +200,12 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
 //                    binding.textViewPin.text = "PIN: $currentPin"
-                    Toast.makeText(requireContext(),
-                        "Share this PIN with your friend to receive the connection",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    showToast("Share this PIN with your friend to receive the connection")
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(),
-                        "Failed to generate PIN: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    showToast("Failed to generate PIN: ${e.message}")
                 }
             }
         }
@@ -229,13 +217,15 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         val uri = outgoingFiles.firstOrNull()?.uri
 
         if (pin == null || peerId == null) {
-            Toast.makeText(requireContext(), "Please generate a PIN first", Toast.LENGTH_SHORT).show()
+            showToast("Please generate a PIN first")
             return
         }
         if (uri == null) {
-            Toast.makeText(requireContext(), "Please pick a file first", Toast.LENGTH_SHORT).show()
+            showToast("Please pick a file first")
             return
         }
+
+        val remotePeerId = pin
 
         // 4) Instantiate the WebSocket client
         signalingClient = WebSocketSignalingClient(
@@ -247,16 +237,11 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
             },
             onIceCandidate = { candidate, from ->
                 senderSession?.onRemoteIceCandidate(candidate)
+            },
+            onOpen = {
+                senderSession?.start()
             }
-        ).also { it.connect() }
-
-        // 5) We still need the RECEIVER’s peerId to tell our sender who to talk to.
-        //    In this simple flow, we’ll just *reuse* the same PIN as the “to” field.
-        //    (On the receiver side, we’ll look up this same PIN and use it as remotePeerId.)
-        //
-        //    If you’d rather exchange a second UUID for the receiver, you can add
-        //    an EditText to gather it here and pass that in instead of `pin`.
-        val remotePeerId = pin
+        )
 
         // 6) Create and start the SenderSession
         senderSession = SenderSession(
@@ -269,15 +254,14 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                 binding.progressBar.progress = pct
             },
             onComplete = {
-                Toast.makeText(requireContext(), "Transfer complete!", Toast.LENGTH_LONG).show()
+                showToast("Transfer complete!")
             },
             onError = { ex ->
-                Toast.makeText(requireContext(),
-                    "Transfer error: ${ex.message}",
-                    Toast.LENGTH_LONG
-                ).show()
+                showToast("Transfer error: ${ex.message}")
             }
-        ).also { it.start() }
+        )
+
+        signalingClient?.connect()
     }
 
     override fun onDestroyView() {
@@ -309,8 +293,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
     private fun sendInvitation(ipAddress: String) {
         if (ipAddress.isBlank() || outgoingFiles.isEmpty()) {
-            Toast.makeText(requireContext(), "IP address or files missing", Toast.LENGTH_SHORT)
-                .show()
+            showToast("IP address or files missing")
             return
         }
 
@@ -325,11 +308,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
             fileName = fileName,
             onAccepted = {
                 dismissWaitingDialog()
-                Toast.makeText(
-                    requireContext(),
-                    "Invite accepted. Sending files...",
-                    Toast.LENGTH_SHORT
-                ).show()
+                showToast("Invite accepted. Sending files...")
                 lifecycleScope.launch {
                     outgoingFiles.forEach { file ->
                         Log.i(
@@ -343,12 +322,11 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
             },
             onRejected = {
                 dismissWaitingDialog()
-                Toast.makeText(requireContext(), "Invite rejected by receiver", Toast.LENGTH_SHORT)
-                    .show()
+                showToast("Invite rejected by receiver")
             },
             onError = { message ->
                 dismissWaitingDialog()
-                Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+                showToast(message)
             }
         )
     }

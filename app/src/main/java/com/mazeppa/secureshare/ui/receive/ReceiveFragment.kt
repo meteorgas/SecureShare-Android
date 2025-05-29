@@ -9,7 +9,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -26,6 +25,9 @@ import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
 import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.Utility.getLocalIpAddress
 import com.mazeppa.secureshare.util.Utility.getPublicIpAddress
+import com.mazeppa.secureshare.util.constant.BASE_URL
+import com.mazeppa.secureshare.util.constant.BASE_URL_2
+import com.mazeppa.secureshare.util.extension.showToast
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -44,8 +46,8 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         private const val REQUEST_CODE_CREATE_FILE = 2001
     }
 
-    private val httpBaseUrl = "http://192.168.231.9:5151"
-    private val wsUrl = "ws://192.168.231.9:5151"
+    private val httpBaseUrl = "https://$BASE_URL"
+    private val wsUrl = "wss://$BASE_URL"
 
     // Will be set after lookup-pin
     private var localPeerId: String? = null
@@ -139,11 +141,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             buttonRemoteConnection.setOnClickListener {
                 val pin = binding.editTextPin.text.toString().trim()
                 if (pin.isEmpty()) {
-                    Toast.makeText(
-                        requireContext(),
-                        "Enter the PIN from sender",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showToast("Enter the PIN from sender")
                 } else {
                     lookupPin(pin)
                 }
@@ -194,11 +192,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    Toast.makeText(
-                        requireContext(),
-                        "Found sender. Your ID: $localPeerId",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    showToast("Found sender. Your ID: $localPeerId")
                     // enable the next steps
                     binding.buttonPickFile.isEnabled = true
                     binding.buttonReceiveFile.isEnabled = true
@@ -206,11 +200,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    Toast.makeText(
-                        requireContext(),
-                        "Lookup failed: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    showToast("Lookup failed: ${e.message}")
                 }
             }
         }
@@ -223,28 +213,23 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         val uri = targetFileUri
 
         if (lp == null || rp == null) {
-            Toast.makeText(requireContext(), "Please lookup the PIN first", Toast.LENGTH_SHORT)
-                .show()
+            showToast("Please lookup the PIN first")
             return
         }
         if (uri == null) {
-            Toast.makeText(requireContext(), "Please pick a save location", Toast.LENGTH_SHORT)
-                .show()
+            showToast("Please pick a save location")
             return
         }
 
         // 3a) Create & connect the WS client
         signalingClient = WebSocketSignalingClient(
-            wsUrl,
-            lp,
-            onOffer = { offer, from ->
-                receiverSession?.onRemoteOffer(offer)
-            },
+            serverUrl = wsUrl,
+            peerId = lp,
+            onOffer = { offer, from -> receiverSession?.onRemoteOffer(offer) },
             onAnswer = { _, _ -> /* not used on receiver */ },
-            onIceCandidate = { candidate, _ ->
-                receiverSession?.onRemoteIceCandidate(candidate)
-            }
-        ).apply { connect() }
+            onIceCandidate = { candidate, _ -> receiverSession?.onRemoteIceCandidate(candidate) },
+            onOpen = { receiverSession?.start() }
+        )
 
         // 3b) Create the ReceiverSession
         receiverSession = ReceiverSession(
@@ -258,13 +243,14 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                 binding.progressBar.progress = (bytes % 100).toInt()
             },
             onComplete = {
-                Toast.makeText(requireContext(), "File received!", Toast.LENGTH_LONG).show()
+                showToast("File received!")
             },
             onError = { ex ->
-                Toast.makeText(requireContext(), "Receive error: ${ex.message}", Toast.LENGTH_LONG)
-                    .show()
+                showToast("Receive error: ${ex.message}")
             }
-        ).also { it.start() }
+        )
+
+        signalingClient?.connect()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

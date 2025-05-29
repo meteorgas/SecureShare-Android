@@ -16,7 +16,8 @@ class WebSocketSignalingClient(
     private val peerId: String,           // your UUID from /generate-pin
     private val onOffer: (offer: SessionDescription, from: String) -> Unit,
     private val onAnswer: (answer: SessionDescription, from: String) -> Unit,
-    private val onIceCandidate: (candidate: IceCandidate, from: String) -> Unit
+    private val onIceCandidate: (candidate: IceCandidate, from: String) -> Unit,
+    private val onOpen: () -> Unit,
 ) {
     private val TAG = "WS-SignalClient"
     private val client = OkHttpClient.Builder()
@@ -37,6 +38,7 @@ class WebSocketSignalingClient(
                     .put("type", "register")
                     .put("peerId", peerId)
                 webSocket.send(msg.toString())
+                onOpen()
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
