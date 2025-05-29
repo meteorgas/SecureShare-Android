@@ -170,6 +170,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                 startActivityForResult(intent, REQUEST_CODE_CREATE_FILE)
             }
 
+            // 3) When user clicks "Receive File", kick off WebRTC receive flow
             binding.buttonReceiveFile.setOnClickListener {
                 startWebRtcReceive()
             }
@@ -193,12 +194,9 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                 client.newCall(req).execute().use { resp ->
                     if (!resp.isSuccessful) throw IOException("Code ${resp.code}")
                     val json = JSONObject(resp.body!!.string())
-                    // the server returns { peerId: "..." }
                     remotePeerId = json.getString("peerId")
                 }
 
-                // generate our own localPeerId
-//                localPeerId = UUID.randomUUID().toString()
                 localPeerId = pin
 
                 withContext(Dispatchers.Main) {
