@@ -46,15 +46,12 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
         private const val TAG = "SendFragment"
     }
 
-    // Replace with your real server URL
     private val httpBaseUrl = "https://$BASE_URL"
-    private val wsUrl = "wss://$BASE_URL_2"
+    private val wsUrl = "wss://$BASE_URL"
 
-    // These will be set once we have a PIN
     private var localPeerId: String? = null
     private var currentPin: String? = null
 
-    // Our WebRTC helpers
     private var signalingClient: WebSocketSignalingClient? = null
     private var senderSession: SenderSession? = null
 
@@ -199,8 +196,11 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-//                    binding.textViewPin.text = "PIN: $currentPin"
-                    showToast("Share this PIN with your friend to receive the connection")
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("Your PIN")
+                        .setMessage("Share this PIN with your friend:\n\n$currentPin")
+                        .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
+                        .show()
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {

@@ -5,10 +5,13 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputFilter
+import android.text.InputType
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -49,14 +52,12 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
     private val httpBaseUrl = "https://$BASE_URL"
     private val wsUrl = "wss://$BASE_URL"
 
-    // Will be set after lookup-pin
     private var localPeerId: String? = null
     private var remotePeerId: String? = null
 
     private var signalingClient: WebSocketSignalingClient? = null
     private var receiverSession: ReceiverSession? = null
 
-    // Chosen save location
     private var targetFileUri: Uri? = null
 
     private lateinit var fileReceiver: FileReceiver
@@ -139,15 +140,27 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             }
 
             buttonRemoteConnection.setOnClickListener {
-                val pin = binding.editTextPin.text.toString().trim()
-                if (pin.isEmpty()) {
-                    showToast("Enter the PIN from sender")
-                } else {
-                    lookupPin(pin)
+                val editText = EditText(requireContext()).apply {
+                    inputType = InputType.TYPE_CLASS_NUMBER
+                    filters = arrayOf(InputFilter.LengthFilter(6))
+                    hint = "Enter 6-digit PIN"
                 }
+
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Enter PIN from sender")
+                    .setView(editText)
+                    .setPositiveButton("OK") { _, _ ->
+                        val pin = editText.text.toString().trim()
+                        if (pin.length != 6 || !pin.all { it.isDigit() }) {
+                            showToast("Please enter a valid 6-digit PIN")
+                        } else {
+                            lookupPin(pin)
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
 
-            // 2) When user clicks "Pick Save Location", open the create-document picker
             binding.buttonPickFile.setOnClickListener {
                 val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
@@ -157,14 +170,12 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                 startActivityForResult(intent, REQUEST_CODE_CREATE_FILE)
             }
 
-            // 3) When user clicks "Receive File", kick off WebRTC receive flow
             binding.buttonReceiveFile.setOnClickListener {
                 startWebRtcReceive()
             }
         }
     }
 
-    /** Step 1: POST { pin } → /lookup-pin to get the sender’s peerId */
     private fun lookupPin(pin: String) {
         binding.progressBar.visibility = View.VISIBLE
         lifecycleScope.launch(Dispatchers.IO) {
@@ -206,7 +217,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         }
     }
 
-    /** Step 3: Wire WS + WebRTC and start receiving */
     private fun startWebRtcReceive() {
         val lp = localPeerId
         val rp = remotePeerId
