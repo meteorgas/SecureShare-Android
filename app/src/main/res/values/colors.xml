@@ -5,6 +5,7 @@
     <color name="colorPrimaryVariant">#3367D6</color>
     <color name="colorOnPrimary">#FFFFFF</color>
     <color name="colorPrimaryAlpha10">#0D245199</color>
+    <color name="colorPrimaryAlpha30">#4D245199</color>
 
     <color name="colorWhiteTone1">#FCFCFF</color>
 

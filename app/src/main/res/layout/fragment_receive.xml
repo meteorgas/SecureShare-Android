@@ -53,6 +53,7 @@
         android:layout_height="200dp"
         android:layout_marginTop="12dp"
         app:cardCornerRadius="10dp"
+        app:strokeColor="@color/colorPrimaryAlpha30"
         app:layout_constraintTop_toBottomOf="@id/textViewSelection">
 
         <androidx.recyclerview.widget.RecyclerView
@@ -121,6 +122,7 @@
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="20dp"
         android:text="FileName"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="@id/progressBar"
         app:layout_constraintStart_toStartOf="@id/progressBar"
         app:layout_constraintTop_toBottomOf="@id/progressBar" />

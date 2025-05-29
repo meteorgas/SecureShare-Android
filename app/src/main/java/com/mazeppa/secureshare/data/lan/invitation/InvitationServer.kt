@@ -5,6 +5,9 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.appcompat.content.res.AppCompatResources
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.mazeppa.secureshare.R
 import fi.iki.elonen.NanoHTTPD
 import okio.IOException
 import org.json.JSONObject
@@ -88,7 +91,8 @@ class InvitationServer : NanoHTTPD(5050) {
         onDeclined: () -> Unit
     ) {
         Handler(Looper.getMainLooper()).post {
-            AlertDialog.Builder(context)
+            MaterialAlertDialogBuilder(context)
+                .setBackground(AppCompatResources.getDrawable(context, R.drawable.dialog_white_rounded))
                 .setTitle("Incoming File")
                 .setMessage("Do you want to accept file: $fileName?")
                 .setPositiveButton("Accept") { _, _ -> onAccepted() }

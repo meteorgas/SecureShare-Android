@@ -5,16 +5,19 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.InputFilter
 import android.text.InputType
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
+import android.widget.FrameLayout
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.mazeppa.secureshare.R
 import com.mazeppa.secureshare.data.lan.invitation.InvitationServer
 import com.mazeppa.secureshare.data.lan.model.IncomingFile
@@ -28,8 +31,7 @@ import com.mazeppa.secureshare.databinding.ListItemIncomingFileBinding
 import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.Utility.getLocalIpAddress
 import com.mazeppa.secureshare.util.Utility.getPublicIpAddress
-import com.mazeppa.secureshare.util.constant.BASE_URL
-import com.mazeppa.secureshare.util.constant.BASE_URL_2
+import com.mazeppa.secureshare.util.constant.Constants
 import com.mazeppa.secureshare.util.extension.showToast
 import com.mazeppa.secureshare.util.generic_recycler_view.RecyclerListAdapter
 import kotlinx.coroutines.Dispatchers
@@ -48,9 +50,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
         private const val TAG = "ReceiveFragment"
         private const val REQUEST_CODE_CREATE_FILE = 2001
     }
-
-    private val httpBaseUrl = "https://$BASE_URL"
-    private val wsUrl = "wss://$BASE_URL"
 
     private var localPeerId: String? = null
     private var remotePeerId: String? = null
@@ -131,9 +130,15 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                     val localIp = getLocalIpAddress()
                     val publicIp = getPublicIpAddress()
 
-                    AlertDialog.Builder(requireContext())
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setBackground(
+                            AppCompatResources.getDrawable(
+                                requireContext(),
+                                R.drawable.dialog_white_rounded
+                            )
+                        )
                         .setTitle("Device IP Addresses")
-                        .setMessage("Local IP: $localIp\nPublic IP: $publicIp")
+                        .setMessage("Local IP:      $localIp\nPublic IP:     $publicIp")
                         .setPositiveButton("OK", null)
                         .show()
                 }
@@ -141,14 +146,34 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
 
             buttonRemoteConnection.setOnClickListener {
                 val editText = EditText(requireContext()).apply {
+                    hint = "PIN"
                     inputType = InputType.TYPE_CLASS_NUMBER
-                    filters = arrayOf(InputFilter.LengthFilter(6))
-                    hint = "Enter 6-digit PIN"
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+                    setPadding(40, 30, 40, 30)
+                    background =
+                        ContextCompat.getDrawable(requireContext(), R.drawable.bg_edittext_material)
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
                 }
 
-                AlertDialog.Builder(requireContext())
-                    .setTitle("Enter PIN from sender")
-                    .setView(editText)
+                val container = FrameLayout(requireContext()).apply {
+                    val margin = resources.getDimensionPixelSize(R.dimen.dialog_margin_horizontal)
+                    setPadding(margin, 0, margin, 0)
+                    addView(editText)
+                }
+
+                MaterialAlertDialogBuilder(requireContext())
+                    .setBackground(
+                        AppCompatResources.getDrawable(
+                            requireContext(),
+                            R.drawable.dialog_white_rounded
+                        )
+                    )
+                    .setTitle("Enter PIN")
+                    .setMessage("Enter 6-digit PIN provided by the sender to establish a connection.")
+                    .setView(container)
                     .setPositiveButton("OK") { _, _ ->
                         val pin = editText.text.toString().trim()
                         if (pin.length != 6 || !pin.all { it.isDigit() }) {
@@ -170,7 +195,6 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                 startActivityForResult(intent, REQUEST_CODE_CREATE_FILE)
             }
 
-            // 3) When user clicks "Receive File", kick off WebRTC receive flow
             binding.buttonReceiveFile.setOnClickListener {
                 startWebRtcReceive()
             }
@@ -187,7 +211,7 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
                     .toRequestBody("application/json".toMediaType())
 
                 val req = Request.Builder()
-                    .url("$httpBaseUrl/lookup-pin")
+                    .url("${Constants.HTTP_BASE_URL_PROD}/lookup-pin")
                     .post(body)
                     .build()
 
@@ -229,17 +253,15 @@ class ReceiveFragment : Fragment(), FileReceiver.FileReceiverListener {
             return
         }
 
-        // 3a) Create & connect the WS client
         signalingClient = WebSocketSignalingClient(
-            serverUrl = wsUrl,
+            serverUrl = Constants.WS_BASE_URL_PROD,
             peerId = lp,
             onOffer = { offer, from -> receiverSession?.onRemoteOffer(offer) },
-            onAnswer = { _, _ -> /* not used on receiver */ },
+            onAnswer = { _, _ -> },
             onIceCandidate = { candidate, _ -> receiverSession?.onRemoteIceCandidate(candidate) },
             onOpen = { receiverSession?.start() }
         )
 
-        // 3b) Create the ReceiverSession
         receiverSession = ReceiverSession(
             requireContext(),
             signalingClient!!,

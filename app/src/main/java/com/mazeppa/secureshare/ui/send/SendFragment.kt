@@ -6,14 +6,21 @@ import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.util.Log
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.content.res.AppCompatResources
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.mazeppa.secureshare.R
 import com.mazeppa.secureshare.data.OutgoingFile
 import com.mazeppa.secureshare.data.client_server.FileUploader.getFileName
 import com.mazeppa.secureshare.data.lan.invitation.InvitationSender
@@ -26,8 +33,7 @@ import com.mazeppa.secureshare.databinding.FragmentSendBinding
 import com.mazeppa.secureshare.util.FileManager
 import com.mazeppa.secureshare.util.FileManager.formatSize
 import com.mazeppa.secureshare.util.FileManager.getFileSize
-import com.mazeppa.secureshare.util.constant.BASE_URL
-import com.mazeppa.secureshare.util.constant.BASE_URL_2
+import com.mazeppa.secureshare.util.constant.Constants
 import com.mazeppa.secureshare.util.extension.showToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -45,9 +51,6 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     companion object {
         private const val TAG = "SendFragment"
     }
-
-    private val httpBaseUrl = "https://$BASE_URL"
-    private val wsUrl = "wss://$BASE_URL"
 
     private var localPeerId: String? = null
     private var currentPin: String? = null
@@ -139,28 +142,48 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
         buttonAddIpAddress.setOnClickListener {
             val editText = EditText(requireContext()).apply {
-                hint = "Enter IP address"
-                inputType = InputType.TYPE_CLASS_TEXT
+                hint = "IP address"
+                inputType = InputType.TYPE_CLASS_PHONE
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
+                setPadding(40, 30, 40, 30)
+                background =
+                    ContextCompat.getDrawable(requireContext(), R.drawable.bg_edittext_material)
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
                 )
             }
 
-            AlertDialog.Builder(requireContext())
+            val container = FrameLayout(requireContext()).apply {
+                val margin = resources.getDimensionPixelSize(R.dimen.dialog_margin_horizontal)
+                setPadding(margin, 0, margin, 0)
+                addView(editText)
+            }
+
+            MaterialAlertDialogBuilder(requireContext())
+                .setBackground(
+                    AppCompatResources.getDrawable(
+                        requireContext(),
+                        R.drawable.dialog_white_rounded
+                    )
+                )
                 .setTitle("Manual Target")
-                .setMessage("Enter the receiver's IP address:")
-                .setView(editText)
+                .setMessage("Enter the receiver's IP address")
+                .setView(container)
                 .setPositiveButton("Send") { _, _ ->
                     val ip = editText.text.toString().trim()
-                    if (ip.isNotBlank()) {
+                    if (ip.isNotEmpty()) {
                         if (outgoingFiles.isNotEmpty()) {
                             sendInvitation(ip)
                         } else {
                             showToast("No files selected")
                         }
                     } else {
-                        showToast("Invalid IP address")
+                        Toast.makeText(
+                            requireContext(),
+                            "Please enter a valid IP",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
                 .setNegativeButton("Cancel", null)
@@ -183,7 +206,7 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
                 val client = OkHttpClient()
                 val body = "{}".toRequestBody("application/json".toMediaType())
                 val req = Request.Builder()
-                    .url("$httpBaseUrl/generate-pin")
+                    .url("${Constants.HTTP_BASE_URL_PROD}/generate-pin")
                     .post(body)
                     .build()
                 client.newCall(req).execute().use { resp ->
@@ -196,7 +219,13 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    AlertDialog.Builder(requireContext())
+                    MaterialAlertDialogBuilder(requireContext())
+                        .setBackground(
+                            AppCompatResources.getDrawable(
+                                requireContext(),
+                                R.drawable.dialog_white_rounded
+                            )
+                        )
                         .setTitle("Your PIN")
                         .setMessage("Share this PIN with your friend:\n\n$currentPin")
                         .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
@@ -227,11 +256,10 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
 
         val remotePeerId = pin
 
-        // 4) Instantiate the WebSocket client
         signalingClient = WebSocketSignalingClient(
-            wsUrl,
-            peerId,
-            onOffer = { _, _ -> /* not used in sender */ },
+            serverUrl = Constants.WS_BASE_URL_PROD,
+            peerId = peerId,
+            onOffer = { _, _ -> },
             onAnswer = { answer, from ->
                 senderSession?.onRemoteAnswer(answer)
             },
@@ -243,7 +271,6 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
             }
         )
 
-        // 6) Create and start the SenderSession
         senderSession = SenderSession(
             requireContext(),
             signalingClient!!,
@@ -332,7 +359,13 @@ class SendFragment : Fragment(), FileSender.FileSenderListener {
     }
 
     private fun showWaitingDialog() {
-        waitingDialog = AlertDialog.Builder(requireContext())
+        waitingDialog = MaterialAlertDialogBuilder(requireContext())
+            .setBackground(
+                AppCompatResources.getDrawable(
+                    requireContext(),
+                    R.drawable.dialog_white_rounded
+                )
+            )
             .setTitle("Waiting for Receiver")
             .setMessage("Waiting for the receiver to accept the file...")
             .setCancelable(false)
